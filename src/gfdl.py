@@ -3,6 +3,7 @@ import os
 import io
 from . import six
 import re
+import logging
 import shutil
 if os.name == 'posix' and six.PY2:
     try:
@@ -24,6 +25,8 @@ from .data_manager import DataSet, DataManager, DataAccessError
 from .environment_manager import VirtualenvEnvironmentManager, CondaEnvironmentManager
 from .shared_diagnostic import Diagnostic, PodRequirementFailure
 from .netcdf_helper import NcoNetcdfHelper # only option currently implemented
+
+_log = logging.getLogger('mdtf.'+__name__)
 
 class ModuleManager(util.Singleton):
     _current_module_versions = {
@@ -111,14 +114,14 @@ class GfdlDiagnostic(Diagnostic):
     """Wrapper for Diagnostic that adds writing a placeholder directory to the
     output as a lockfile if we're running in frepp cooperative mode.
     """
-    def __init__(self, pod_name, verbose=0):
-        super(GfdlDiagnostic, self).__init__(pod_name, verbose)
+    def __init__(self, pod_name):
+        super(GfdlDiagnostic, self).__init__(pod_name)
         self._has_placeholder = False
 
-    def setUp(self, verbose=0):
+    def setUp(self):
         config = util_mdtf.ConfigManager()
         try:
-            super(GfdlDiagnostic, self).setUp(verbose)
+            super(GfdlDiagnostic, self).setUp()
             make_remote_dir(
                 self.POD_OUT_DIR,
                 timeout=config.config.get('file_transfer_timeout', 0),
@@ -128,18 +131,18 @@ class GfdlDiagnostic(Diagnostic):
         except PodRequirementFailure:
             raise
 
-    def tearDown(self, verbose=0):
+    def tearDown(self):
         # only run teardown (including logging error on index.html) if POD ran
         if self._has_placeholder:
-            super(GfdlDiagnostic, self).tearDown(verbose)
+            super(GfdlDiagnostic, self).tearDown()
 
 class GfdlvirtualenvEnvironmentManager(VirtualenvEnvironmentManager):
     # Use module files to switch execution environments, as defined on 
     # GFDL workstations and PP/AN cluster.
 
-    def __init__(self, verbose=0):
+    def __init__(self):
         _ = ModuleManager()
-        super(GfdlvirtualenvEnvironmentManager, self).__init__(verbose)
+        super(GfdlvirtualenvEnvironmentManager, self).__init__()
 
     # manual-coded logic like this is not scalable
     def set_pod_env(self, pod):
@@ -206,7 +209,7 @@ def GfdlautoDataManager(case_dict, DateFreqMixin=None):
     if 'pp' in os.path.basename(test_root):
         return GfdlppDataManager(case_dict, DateFreqMixin)
     else:
-        print(("ERROR: Couldn't determine data fetch method from input."
+        _log.critical(("ERROR: Couldn't determine data fetch method from input."
             "Please set '--data_manager GFDL_pp', 'GFDL_UDA_CMP6', or "
             "'GFDL_data_cmip6', depending on the source you want."))
         exit()
@@ -256,7 +259,7 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
         pass
 
     def _listdir(self, dir_):
-        # print("\t\tDEBUG: listdir on ...{}".format(dir_[len(self.root_dir):]))
+        _log.debug("listdir on ...%s", dir_[len(self.root_dir):])
         return os.listdir(dir_)
 
     def _list_filtered_subdirs(self, dirs_in, subdir_filter=None):
@@ -270,9 +273,10 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
             if subdir_filter:
                 found_subdirs = found_subdirs.intersection(subdir_filter)
             if not found_subdirs:
-                print("\tCouldn't find subdirs (in {}) at {}, skipping".format(
+                _log.warning(
+                    "Couldn't find subdirs (in %s) at %s, skipping",
                     subdir_filter, os.path.join(self.root_dir, dir_)
-                ))
+                )
                 continue
             found_dirs.extend([
                 os.path.join(dir_, subdir_) for subdir_ in found_subdirs \
@@ -312,8 +316,10 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
                 try:
                     files.append(self.parse_relative_path(dir_, f))
                 except ValueError as exc:
-                    print('\tDEBUG:', exc)
-                    #print('\t\tDEBUG: ', exc, '\n\t\t', os.path.join(self.root_dir, dir_), f)
+                    _log.debug(
+                        'DEBUG: %s (%s %s)', 
+                        exc, os.path.join(self.root_dir, dir_), f
+                    )
                     continue
             for ds in files:
                 data_key = self.dataset_key(ds)
@@ -355,8 +361,9 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
         d_to_u_dict = self._decide_allowed_components()
         for data_key in self.data_keys:
             u_key = d_to_u_dict[data_key]
-            print("Selected {} for {} @ {}".format(
-                u_key, data_key.name_in_model, data_key.date_freq)
+            _log.info(
+                "Selected %s for %s @ %s",
+                u_key, data_key.name_in_model, data_key.date_freq
             )
             # check we didn't eliminate everything:
             assert self._component_map[u_key, data_key] 
@@ -367,12 +374,12 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
             for f in self.data_files[data_key]:
                 paths.add(f._remote_data)
         if self.tape_filesystem:
-            print("start dmget of {} files".format(len(paths)))
+            _log.warning("start dmget of %s files", len(paths))
             util.run_command(['dmget','-t','-v'] + list(paths),
                 timeout= len(paths) * self.file_transfer_timeout,
                 dry_run=self.dry_run
             ) 
-            print("end dmget")
+            _log.warning("end dmget")
 
     def local_data_is_current(self, dataset):
         """Test whether data is current based on filesystem modification dates.
@@ -394,11 +401,12 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
         return sorted(list(self.data_keys))
 
     def _fetch_exception_handler(self, exc):
-        print(exc)
+        if hasattr(exc, 'msg'):
+            _log.warning(exc.msg)
         # iterating over the keys themselves, so that will be what's passed 
         # in the exception
         for pod in self.data_pods[exc.dataset]:
-            print("\tSkipping pod {} due to data fetch error.".format(pod.name))
+            _log.warning("Skipping pod %s due to data fetch error.", pod.name)
             pod.skipped = exc
 
     def fetch_dataset(self, d_key, method='auto'):
@@ -421,9 +429,10 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
         # copy remote files
         # TODO: Do something intelligent with logging, caught OSErrors
         for f in remote_files:
-            print("\tcopying ...{} to {}".format(
+            _log.info(
+                "\tcopying ...%s to %s",
                 f._remote_data[len(self.root_dir):], work_dir
-            ))
+            )
             util.run_command(cp_command + [
                 smartsite + f._remote_data, 
                 # gcp requires trailing slash, ln ignores it
@@ -457,11 +466,12 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
                     if 'axis' in fax_attrs and 'axis' in var.axes[fax] \
                         and fax_attrs['axis'].lower() != var.axes[fax]['axis'].lower() \
                         and error_flag != 1:
-                        print(("\tWarning: unexpected axis attribute for {0} in "
-                            "{1} (found {2}, {3} convention is {4})").format(
-                                fax, file_name, fax_attrs['axis'], 
-                                self.convention, var.axes[fax]['axis']
-                        ))
+                        _log.warning(
+                            ("Unexpected axis attribute for %s in %s (found %s, "
+                                "%s convention is %s)"),
+                            fax, file_name, fax_attrs['axis'], self.convention, 
+                            var.axes[fax]['axis']
+                        )
                         error_flag = 1
                     var.axes[fax]['MDTF_set_from_axis'] = False
                 else: 
@@ -472,11 +482,12 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
                         elif vax_attrs['axis'].lower() == fax_attrs['axis'].lower():
                             # matched axis attributes: log warning & reassign
                             if error_flag != 2:
-                                print(("\tWarning: unexpected {0} axis name in {1} "
-                                    "(found {2}, {3} convention is {4})").format(
-                                        fax_attrs['axis'], file_name, fax, 
-                                        self.convention, vax
-                                ))
+                                _log.warning(
+                                    ("Unexpected %s axis name in %s (found %s, "
+                                        "%s convention is %s)"),
+                                    fax_attrs['axis'], file_name, fax, 
+                                    self.convention, vax
+                                )
                                 error_flag = 2
                             # only update so we don't overwrite the envvar name
                             var.axes[fax] = vax_attrs.copy()
@@ -487,8 +498,10 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
                     else:
                         # get here if we didn't hit 'break' above -- give up
                         if error_flag != 3:
-                            print(("\tWarning: unable to assign {0} axis "
-                                "in {1}.").format(fax, file_name))
+                            _log.warning(
+                                "Unable to assign %s axis in %s",
+                                fax, file_name
+                            )
                             error_flag = 3
 
         # crop time axis to requested range
@@ -500,14 +513,16 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
                 time_var_name = vax
                 break
         else:
-            print("\tCan't determine time axis for {}.".format(file_name))
+            _log.error("Can't determine time axis for %s.", file_name)
             time_var_name = 'time' # will probably give KeyError
         trim_count = 0
         for f in remote_files:
             file_name = os.path.basename(f._remote_data)
             if not self.date_range.overlaps(f.date_range):
-                print(("\tWarning: {} has dates {} outside of requested "
-                    "range {}.").format(file_name, f.date_range, self.date_range))
+                _log.warning(
+                    "%s has dates %s outside of requested range %s.",
+                    file_name, f.date_range, self.date_range
+                )
                 continue
             if not self.date_range.contains(f.date_range):
                 # file overlaps analysis range but is not strictly contained
@@ -516,23 +531,23 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
                     self.date_range,
                     precision=f.date_range.precision
                 )
-                print("\ttrimming '{}' of {} from {} to {}".format(
-                    time_var_name, file_name, f.date_range, trimmed_range))
+                _log.info(
+                    "Trimming '%s' of %s from %s to %s",
+                    time_var_name, file_name, f.date_range, trimmed_range
+                )
                 trim_count = trim_count + 1
                 self.nc_crop_time_axis(
                     time_var_name, trimmed_range, 
                     in_file=file_name, cwd=work_dir, dry_run=self.dry_run
                 )
         if trim_count > 2:
-            print("trimmed {} files!".format(trim_count))
+            _log.error("Trimmed date of %s files in sequence!", trim_count)
             raise AssertionError()
 
         # cat chunks to destination, if more than one
         if len(remote_files) > 1:
             # not running in shell, so can't use glob expansion.
-            print("\tcatting {} chunks to {}".format(
-                d_key.name_in_model, dest_path
-            ))
+            _log.info("Catting %s chunks to %s", d_key.name_in_model, dest_path)
             chunks = [os.path.basename(f._remote_data) for f in remote_files]
             self.nc_cat_chunks(chunks, dest_path, 
                 cwd=work_dir, dry_run=self.dry_run
@@ -540,7 +555,7 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
         else:
             f = util.coerce_from_iter(remote_files)
             file_name = os.path.basename(f._remote_data)
-            print("\tsymlinking {} to {}".format(d_key.name_in_model, dest_path))
+            _log.info("Symlinking %s to %s", d_key.name_in_model, dest_path)
             util.run_command(['ln', '-fs', \
                 os.path.join(work_dir, file_name), dest_path],
                 dry_run=self.dry_run
@@ -569,7 +584,7 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
         # progress to TEMP_HTML.
         prev_html = os.path.join(self.MODEL_OUT_DIR, 'index.html')
         if self.frepp_mode and os.path.exists(prev_html):
-            print("\tDEBUG: Appending previous index.html at {}".format(prev_html))
+            _log.info("Appending previous index.html at %s", prev_html)
             with io.open(prev_html, 'r', encoding='utf-8') as f1:
                 contents = f1.read()
             contents = contents.split('<!--CUT-->')
@@ -579,7 +594,7 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
             if os.path.exists(self.TEMP_HTML):
                 mode = 'a'
             else:
-                print("\tWARNING: No file at {}.".format(self.TEMP_HTML))
+                _log.warning("No file at %s.", self.TEMP_HTML)
                 mode = 'w'
             with io.open(self.TEMP_HTML, mode, encoding='utf-8') as f2:
                 f2.write(contents)
@@ -615,11 +630,11 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
                         timeout=self.file_transfer_timeout, dry_run=self.dry_run
                     )
             # copy all case-level files
-            print("\tDEBUG: files in {}".format(self.MODEL_WK_DIR))
+            _log.debug("Files in %s", self.MODEL_WK_DIR)
             for f in os.listdir(self.MODEL_WK_DIR):
-                print("\t\tDEBUG: found {}".format(f))
+                _log.debug("Found %s", f)
                 if os.path.isfile(os.path.join(self.MODEL_WK_DIR, f)):
-                    print("\t\tDEBUG: found {}".format(f))
+                    _log.debug("Found %s", f)
                     gcp_wrapper(
                         os.path.join(self.MODEL_WK_DIR, f), 
                         self.MODEL_OUT_DIR,
@@ -630,18 +645,22 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
             if os.path.exists(self.MODEL_OUT_DIR):
                 if self.overwrite:
                     try:
-                        print('Error: {} exists, attempting to remove.'.format(
-                            self.MODEL_OUT_DIR))
+                        _log.warning(
+                            "%s exists, attempting to remove.",
+                            self.MODEL_OUT_DIR
+                        )
                         shutil.rmtree(self.MODEL_OUT_DIR)
                     except OSError:
                         # gcp will not overwrite dirs, so forced to save under
                         # a different name despite overwrite=True
-                        print(("Error: couldn't remove {} (probably mounted read"
-                            "-only); will rename new directory.").format(
-                            self.MODEL_OUT_DIR))
+                        _log.exception(
+                            ("Couldn't remove %s (probably mounted read-only); "
+                            "will rename new directory."), self.MODEL_OUT_DIR
+                        )
                 else:
-                    print("Error: {} exists; will rename new directory.".format(
-                        self.MODEL_OUT_DIR))
+                    _log.error(
+                        "%s exists; will rename new directory.", self.MODEL_OUT_DIR
+                    )
             try:
                 if os.path.exists(self.MODEL_OUT_DIR):
                     # check again, since rmtree() might have succeeded
@@ -649,7 +668,7 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
                         util_mdtf.bump_version(self.MODEL_OUT_DIR)
                     new_wkdir, _ = \
                         util_mdtf.bump_version(self.MODEL_WK_DIR, new_v=version)
-                    print("\tDEBUG: move {} to {}".format(self.MODEL_WK_DIR, new_wkdir))
+                    _log.info("Move %s to %s", self.MODEL_WK_DIR, new_wkdir)
                     shutil.move(self.MODEL_WK_DIR, new_wkdir)
                     self.MODEL_WK_DIR = new_wkdir
                 gcp_wrapper(
@@ -891,7 +910,7 @@ def gcp_wrapper(source_path, dest_dir, timeout=0, dry_run=False):
     else:
         source = ['gfdl:' + source_path]
         dest = ['gfdl:' + dest_dir + os.sep]
-    print('\tDEBUG: GCP {} -> {}'.format(source[-1], dest[-1]))
+    _log.debug('GCP %s -> %s', source[-1], dest[-1])
     util.run_command(
         ['gcp', '--sync', '-v', '-cd'] + source + dest,
         timeout=timeout, 
@@ -974,7 +993,7 @@ def parse_frepp_stub(frepp_stub):
         \s*$          # remainder of line must be whitespace.
         """, re.VERBOSE)
     for line in frepp_stub.splitlines():
-        print("line = '{}'".format(line))
+        _log.info("line = '%s'", line)
         match = re.match(regex, line)
         if match:
             if match.group('key') in frepp_translate:

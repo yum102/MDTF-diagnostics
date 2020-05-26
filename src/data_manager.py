@@ -3,6 +3,7 @@ import os
 from . import six
 import glob
 import copy
+import logging
 import shutil
 from collections import defaultdict, namedtuple
 from itertools import chain
@@ -22,6 +23,7 @@ from . import datelabel
 from . import netcdf_helper
 from .shared_diagnostic import PodRequirementFailure
 
+_log = logging.getLogger('mdtf.'+__name__)
 
 @six.python_2_unicode_compatible
 class DataQueryFailure(Exception):
@@ -188,11 +190,11 @@ class DataManager(six.with_metaclass(ABCMeta)):
 
     # -------------------------------------
 
-    def setUp(self, verbose=0):
+    def setUp(self):
         util_mdtf.check_required_dirs(
             already_exist =[], 
             create_if_nec = [self.MODEL_WK_DIR, self.MODEL_DATA_DIR], 
-            verbose=verbose)
+        )
         self.envvars.update({
             "DATADIR": self.MODEL_DATA_DIR,
             "variab_dir": self.MODEL_WK_DIR,
@@ -208,10 +210,10 @@ class DataManager(six.with_metaclass(ABCMeta)):
                 "{}.").format(self.convention))
         temp = translate.variables[self.convention].to_dict()
         for key, val in iter(temp.items()):
-            util_mdtf.setenv(key, val, self.envvars, verbose=verbose)
+            util_mdtf.setenv(key, val, self.envvars)
         temp = translate.units[self.convention].to_dict()
         for key, val in iter(temp.items()):
-            util_mdtf.setenv(key, val, self.envvars, verbose=verbose)
+            util_mdtf.setenv(key, val, self.envvars)
 
         for pod in self.iter_pods():
             self._setup_pod(pod)
@@ -309,7 +311,7 @@ class DataManager(six.with_metaclass(ABCMeta)):
                 new_varlist = [var for var \
                     in self._iter_populated_varlist(pod.varlist, pod.name)]
             except DataQueryFailure as exc:
-                print("Data query failed on pod {}; skipping.".format(pod.name))
+                _log.warning("Data query failed on %s; skipping.", pod.name)
                 pod.skipped = exc
                 new_varlist = []
             for var in new_varlist:
@@ -350,20 +352,22 @@ class DataManager(six.with_metaclass(ABCMeta)):
                 continue
 
     def _fetch_exception_handler(self, exc):
-        print(exc)
+        if hasattr(exc, 'msg'):
+            _log.warning(exc.msg)
         keys_from_file = self.data_files.inverse()
         for key in keys_from_file[exc.dataset]:
             for pod in self.data_pods[key]:
-                print(("\tSkipping pod {} due to data fetch error."
-                    "").format(pod.name))
+                _log.warning("Skipping %s due to data fetch error.", pod.name)
                 pod.skipped = exc
 
     def _query_data(self):
         for data_key in self.data_keys:
             try:
                 var = self.data_keys[data_key][0]
-                print("Calling query_dataset on {} @ {}".format(
-                    var.name_in_model, var.date_freq))
+                _log.info(
+                    "Calling query_dataset on %s @ %s",
+                    var.name_in_model, var.date_freq
+                )
                 files = self.query_dataset(var)
                 self.data_files[data_key].update(files)
             except DataQueryFailure:
@@ -376,9 +380,10 @@ class DataManager(six.with_metaclass(ABCMeta)):
         """
         for var in var_iter:
             if var._remote_data:
-                print("Found {} (= {}) @ {} for {}".format(
+                _log.info(
+                    "Found %s (= %s) @ %s for %s",
                     var.name_in_model, var.name, var.date_freq, pod_name
-                ))
+                )
                 yield var
             elif not var.alternates:
                 raise DataQueryFailure(
@@ -388,10 +393,10 @@ class DataManager(six.with_metaclass(ABCMeta)):
                         var.name_in_model, var.name, var.date_freq, pod_name
                 ))
             else:
-                print(("Couldn't find {} (= {}) @ {} for {}, trying "
-                    "alternates").format(
-                        var.name_in_model, var.name, var.date_freq, pod_name
-                ))
+                _log.info(
+                    "Couldn't find %s (= %s) @ %s for %s, trying alternates.",
+                    var.name_in_model, var.name, var.date_freq, pod_name
+                )
                 for alt_var in self._iter_populated_varlist(var.alternates, pod_name):
                     yield alt_var  # no 'yield from' in py2.7
 
@@ -467,7 +472,7 @@ class DataManager(six.with_metaclass(ABCMeta)):
         src_dir = os.path.join(self.code_root, 'src', 'html')
         dest = os.path.join(self.MODEL_WK_DIR, 'index.html')
         if os.path.isfile(dest):
-            print("WARNING: index.html exists, deleting.")
+            _log.warning("index.html exists, deleting.")
             os.remove(dest)
 
         template_dict = self.envvars.copy()
@@ -494,7 +499,7 @@ class DataManager(six.with_metaclass(ABCMeta)):
         if not self.file_overwrite:
             out_file, _ = util_mdtf.bump_version(out_file)
         elif os.path.exists(out_file):
-            print('Overwriting {}.'.format(out_file))
+            _log.info("Overwriting %s.", out_file)
         util.write_json(config.config.toDict(), out_file)
         return out_file
 
@@ -504,9 +509,9 @@ class DataManager(six.with_metaclass(ABCMeta)):
         out_file = os.path.join(tar_dest_dir, self.MODEL_WK_DIR+'.tar')
         if not self.file_overwrite:
             out_file, _ = util_mdtf.bump_version(out_file)
-            print("Creating {}.".format(out_file))
+            _log.info("Creating %s.", out_file)
         elif os.path.exists(out_file):
-            print('Overwriting {}.'.format(out_file))
+            _log.info("Overwriting %s.", out_file)
         tar_flags = ["--exclude=.{}".format(s) for s in ['netCDF','nc','ps','PS','eps']]
         tar_flags = ' '.join(tar_flags)
         util.run_shell_command(
@@ -518,12 +523,13 @@ class DataManager(six.with_metaclass(ABCMeta)):
     def _copy_to_output(self):
         if self.MODEL_WK_DIR == self.MODEL_OUT_DIR:
             return # no copying needed
-        print("copy {} to {}".format(self.MODEL_WK_DIR, self.MODEL_OUT_DIR))
+        _log.info("Copy %s to %s", self.MODEL_WK_DIR, self.MODEL_OUT_DIR)
         try:
             if os.path.exists(self.MODEL_OUT_DIR):
                 if not self.overwrite:
-                    print('Error: {} exists, overwriting anyway.'.format(
-                        self.MODEL_OUT_DIR))
+                    _log.warning(
+                        "Error: %s exists, overwriting anyway.", self.MODEL_OUT_DIR
+                    )
                 shutil.rmtree(self.MODEL_OUT_DIR)
         except Exception:
             raise

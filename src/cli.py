@@ -7,9 +7,12 @@ if six.PY2:
 else:
     from collections import ChainMap
 import argparse
+import logging
 import shlex
 import collections
 from . import util
+
+_log = logging.getLogger('mdtf.'+__name__)
 
 class CustomHelpFormatter(
         argparse.RawDescriptionHelpFormatter, 
@@ -283,20 +286,24 @@ class FrameworkCLIHandler(CLIHandler):
         is_file = os.path.isfile(var_val)
         is_dir = os.path.isdir(var_val)
         if not is_file and not is_dir:
-            print("Error: couldn't locate {}".format(var_val))
+            _log.critical("Couldn't locate %s", var_val)
             exit()
         elif is_file:
             if self.config['INPUT_FILE'] is not None:
-                print(("Error: trying to set INPUT_FILE twice (got "
-                    "'{}', '{}')").format(self.config['INPUT_FILE'], var_val))
+                _log.critical(
+                    "Trying to set INPUT_FILE twice (got '%s', '%s')",
+                    self.config['INPUT_FILE'], var_val
+                )
                 exit()
             else:
                 self.config['INPUT_FILE'] = var_val
                 self.is_default['INPUT_FILE'] = False
         elif is_dir:
             if self.config['CASE_ROOT_DIR'] is not None:
-                print(("Error: trying to set CASE_ROOT_DIR twice (got "
-                    "'{}', '{}')").format(self.config['CASE_ROOT_DIR'], var_val))
+                _log.critical(
+                    "Trying to set CASE_ROOT_DIR twice (got '%s', '%s')",
+                    self.config['CASE_ROOT_DIR'], var_val
+                )
                 exit()
             else:
                 self.config['CASE_ROOT_DIR'] = var_val
@@ -319,7 +326,7 @@ class FrameworkCLIHandler(CLIHandler):
                 with io.open(config_path, 'r', encoding='utf-8') as f:
                     config_str = f.read()
             except Exception:
-                print("ERROR: Can't read input file at {}.".format(config_path))
+                _log.exception("Can't read input file at %s.", config_path)
         if config_str:
             try:
                 file_input = util.parse_json(config_str)
@@ -334,7 +341,7 @@ class FrameworkCLIHandler(CLIHandler):
                 }]
             except Exception:
                 if 'json' in os.path.splitext('config_path')[1].lower():
-                    print("ERROR: Couldn't parse JSON in {}.".format(config_path))
+                    _log.exception("ERROR: Couldn't parse JSON in %s.", config_path)
                     raise
                 # assume config_file is a plain text file containing flags, etc.
                 # as they would be passed on the command line.
@@ -409,8 +416,10 @@ def load_pod_settings(code_root, pod=None, pod_list=None):
         )
     else:
         if pod not in pod_list:
-            print("Couldn't recognize POD {} out of the following diagnostics:".format(pod))
-            print(', '.join(pod_list))
+            _log.error(
+                "Couldn't recognize POD %s out of the following diagnostics:\n%s",
+                pod, ', '.join(pod_list)
+            )
             return dict()
         return _load_one_json(pod)
 

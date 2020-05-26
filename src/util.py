@@ -6,6 +6,7 @@ import os
 import io
 from . import six
 import re
+import logging
 import shlex
 import collections
 from distutils.spawn import find_executable
@@ -21,6 +22,8 @@ import threading
 import errno
 import json
 from six.moves import getcwd, collections_abc
+
+_log = logging.getLogger('mdtf.'+__name__)
 
 class _Singleton(type):
     """Private metaclass that creates a :class:`~util.Singleton` base class when
@@ -295,7 +298,7 @@ def read_json(file_path):
         with io.open(file_path, 'r', encoding='utf-8') as file_:
             str_ = file_.read()
     except IOError:
-        print('Fatal IOError when trying to read {}. Exiting.'.format(file_path))
+        _log.critical('Fatal IOError when reading %s. Exiting.', file_path)
         exit()
     return parse_json(str_)
 
@@ -304,17 +307,16 @@ def parse_json(str_):
     try:
         parsed_json = json.loads(str_, object_pairs_hook=collections.OrderedDict)
     except UnicodeDecodeError:
-        print('{} contains non-ascii characters. Exiting.'.format(str_))
+        _log.critical('Unicode error while deocding %s. Exiting.', str_)
         exit()
     return parsed_json
 
-def write_json(struct, file_path, verbose=0, sort_keys=False):
+def write_json(struct, file_path, sort_keys=False):
     """Wrapping file I/O simplifies unit testing.
 
     Args:
         struct (:py:obj:`dict`)
         file_path (:py:obj:`str`): path of the JSON file to write.
-        verbose (:py:obj:`int`, optional): Logging verbosity level. Default 0.
     """
     try:
         str_ = json.dumps(struct, 
@@ -322,7 +324,7 @@ def write_json(struct, file_path, verbose=0, sort_keys=False):
         with io.open(file_path, 'w', encoding='utf-8') as file_:
             file_.write(six.ensure_text(str_, encoding='utf-8', errors='strict'))
     except IOError:
-        print('Fatal IOError when trying to write {}. Exiting.'.format(file_path))
+        _log.critical('Fatal IOError when trying to write %s.', file_path)
         exit()
 
 def pretty_print_json(struct, sort_keys=False):
@@ -396,7 +398,7 @@ def resolve_path(path, root_path="", env=None):
     if isinstance(env, dict):
         path = _expandvars(path, env)
     if '$' in path:
-        print("Warning: couldn't resolve all env vars in '{}'".format(path))
+        _log.error("Couldn't resolve all env vars in '%s'", path)
         return path
     if os.path.isabs(path):
         return path
@@ -482,7 +484,7 @@ def run_command(command, env=None, cwd=None, timeout=0, dry_run=False):
         command = shlex.split(command)
     cmd_str = ' '.join(command)
     if dry_run:
-        print('DRY_RUN: call {}'.format(cmd_str))
+        _log.warning('DRY_RUN: call %s', cmd_str)
         return
     proc = None
     pid = None
@@ -512,9 +514,10 @@ def run_command(command, env=None, cwd=None, timeout=0, dry_run=False):
         stderr = stderr+"\nCaught exception {0}({1!r})".format(
             type(exc).__name__, exc.args)
     if retcode != 0:
-        print('run_command on {} (pid {}) exit status={}:{}\n'.format(
+        _log.error(
+            "run_command on %s (pid %s) exit status=%s:%s",
             cmd_str, pid, retcode, stderr
-        ))
+        )
         raise subprocess.CalledProcessError(
             returncode=retcode, cmd=cmd_str, output=stderr)
     if '\0' in stdout:
@@ -554,7 +557,7 @@ def run_shell_command(command, env=None, cwd=None, dry_run=False):
     if not isinstance(command, six.string_types):
         command = ' '.join(command)
     if dry_run:
-        print('DRY_RUN: call {}'.format(command))
+        _log.warning('DRY_RUN: call %s', command)
         return
     proc = None
     pid = None
@@ -577,9 +580,10 @@ def run_shell_command(command, env=None, cwd=None, dry_run=False):
         stderr = stderr+"\nCaught exception {0}({1!r})".format(
             type(exc).__name__, exc.args)
     if retcode != 0:
-        print('run_shell_command on {} (pid {}) exit status={}:{}\n'.format(
+        _log.error(
+            "run_shell_command on %s (pid %s) exit status=%s:%s",
             command, pid, retcode, stderr
-        ))
+        )
         raise subprocess.CalledProcessError(
             returncode=retcode, cmd=command, output=stderr)
     if '\0' in stdout:
@@ -627,7 +631,8 @@ def signal_logger(caller_name, signum=None, frame=None):
             k:v for v, k in reversed(sorted(list(signal.__dict__.items()))) \
                 if v.startswith('SIG') and not v.startswith('SIG_')
         }
-        print("\tDEBUG: {} caught signal {} ({})".format(
+        _log.info(
+            "%s caught signal %s (%s)",
             caller_name, sig_lookup.get(signum, 'UNKNOWN'), signum
-        ))
-        print("\tDEBUG: {}".format(frame))
+        )
+        _log.debug("%s frame: %s", caller_name, frame)

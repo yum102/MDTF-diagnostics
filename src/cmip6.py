@@ -2,9 +2,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 from . import six
 import re
+import logging
 from . import datelabel
 from . import util
 from . import util_mdtf
+
+_log = logging.getLogger('mdtf.'+__name__)
 
 class CMIP6_CVs(util.Singleton):
     def __init__(self, unittest_flag=False):

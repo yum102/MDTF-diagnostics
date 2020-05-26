@@ -3,6 +3,7 @@ import os
 import io
 from . import six
 import glob
+import logging
 import shutil
 import atexit
 import signal
@@ -18,10 +19,12 @@ from . import util
 from . import util_mdtf
 from .shared_diagnostic import PodRequirementFailure
 
+_log = logging.getLogger('mdtf.'+__name__)
+
 class EnvironmentManager(six.with_metaclass(ABCMeta)):
     # analogue of TestSuite in xUnit - abstract base class
 
-    def __init__(self, verbose=0):
+    def __init__(self):
         config = util_mdtf.ConfigManager()
         self.test_mode = config.config.test_mode
         self.pods = []
@@ -67,7 +70,7 @@ class EnvironmentManager(six.with_metaclass(ABCMeta)):
 
     # -------------------------------------
 
-    def run(self, verbose=0):
+    def run(self):
         for pod in self.pods:
             pod._setup_pod_directories() # should refactor setUp
 
@@ -77,20 +80,20 @@ class EnvironmentManager(six.with_metaclass(ABCMeta)):
             )
             log_str = "--- MDTF.py Starting POD {}\n".format(pod.name)
             pod.logfile_obj.write(log_str)
-            if verbose > 0: print(log_str)
+            _log.info(log_str)
 
             try:
                 pod.setUp()
             except PodRequirementFailure as exc:
-                log_str = "\nSkipping execution of {}.\nReason: {}\n".format(
+                log_str = "Skipping execution of {}.\nReason: {}\n".format(
                     exc.pod.name, str(exc))
                 pod.logfile_obj.write(log_str)
                 pod.logfile_obj.close()
                 pod.logfile_obj = None
-                print(log_str)
+                _log.info(log_str)
                 pod.skipped = exc
                 continue
-            print("{} will run in env: {}".format(pod.name, pod.env))
+            _log.info("%s will run in env: %s", pod.name, pod.env)
             pod.logfile_obj.write("\n".join(
                 ["Found files: "] + pod.found_files + [" "]))
             env_list = ["{}: {}". format(k,v) for k,v in iter(pod.pod_env_vars.items())]
@@ -107,8 +110,10 @@ class EnvironmentManager(six.with_metaclass(ABCMeta)):
                     stdout = pod.logfile_obj, stderr = subprocess.STDOUT
                 )
             except OSError as exc:
-                print('ERROR :', exc.errno, exc.strerror)
-                print(" occured with call: {}".format(pod.run_commands()))
+                _log.exception(
+                    "Error %s (%s) occured with call `%s`",
+                    exc.errno, exc.strerror, pod.run_commands()
+                )
                 pod.skipped = exc
                 pod.logfile_obj.close()
                 pod.logfile_obj = None
@@ -139,9 +144,9 @@ class EnvironmentManager(six.with_metaclass(ABCMeta)):
         # '&&' so we abort if any command in the sequence fails.
         if self.test_mode:
             for cmd in commands:
-                print('TEST MODE: call {}'.format(cmd))
+                _log.warning("TEST MODE: call `%s`", cmd)
         else:
-            print("Calling : {}".format(run_cmds[-1]))
+            _log.info("Calling `%s`", run_cmds[-1])
         commands = ' && '.join([s for s in commands if s])
 
         # Need to run bash explicitly because 'conda activate' sources 
@@ -190,8 +195,8 @@ class VirtualenvEnvironmentManager(EnvironmentManager):
     # for R, use xxx.
     # Do not attempt management for NCL.
 
-    def __init__(self, verbose=0):
-        super(VirtualenvEnvironmentManager, self).__init__(verbose)
+    def __init__(self):
+        super(VirtualenvEnvironmentManager, self).__init__()
 
         config = util_mdtf.ConfigManager()
         self.venv_root = config.paths.get('venv_root', '')
@@ -280,8 +285,8 @@ class CondaEnvironmentManager(EnvironmentManager):
     # Use Anaconda to switch execution environments.
     env_name_prefix = '_MDTF_' # our envs start with this string to avoid conflicts
 
-    def __init__(self, verbose=0):
-        super(CondaEnvironmentManager, self).__init__(verbose)
+    def __init__(self):
+        super(CondaEnvironmentManager, self).__init__()
 
         config = util_mdtf.ConfigManager()
         self.code_root = config.paths.CODE_ROOT
@@ -308,7 +313,7 @@ class CondaEnvironmentManager(EnvironmentManager):
                 elif key == '_CONDA_ROOT':
                     self.conda_root = val
         except:
-            print("Error: can't find conda.")
+            _log.exception("Can't find conda.")
             raise
 
         # find where environments are installed
@@ -328,7 +333,10 @@ class CondaEnvironmentManager(EnvironmentManager):
                 '{} env list | grep -qF "{}"'.format(self.conda_exe, conda_prefix)
             )
         except:
-            print('Conda env {} not found (grepped for {})'.format(env_name,conda_prefix))
+            _log.exception(
+                "Conda env %s not found (grepped for %s)",
+                env_name, conda_prefix
+            )
             #self._call_conda_create(env_name)
 
     def _call_conda_create(self, env_name):
@@ -338,10 +346,10 @@ class CondaEnvironmentManager(EnvironmentManager):
             short_name = env_name
         path = '{}/env_{}.yml'.format(self.conda_dir, short_name)
         if not os.path.exists(path):
-            print("Can't find {}".format(path))
+            _log.error("Can't find %s", path)
         else:
             conda_prefix = os.path.join(self.conda_env_root, env_name)
-            print('Creating conda env {} in {}'.format(env_name, conda_prefix))
+            _log.info("Creating conda env %s in %s", env_name, conda_prefix)
         command = \
             'source {}/conda_init.sh {} && '.format(
                 self.conda_dir, self.conda_root
@@ -378,8 +386,10 @@ class CondaEnvironmentManager(EnvironmentManager):
             elif 'python' in langs:
                 pod.env = self.env_name_prefix + 'python_base'
             else:
-                print("Can't find environment providing {}".format(
-                    pod.runtime_requirements))
+                _log.error(
+                    "Can't find environment providing %s",
+                    pod.runtime_requirements
+                )
 
     def activate_env_commands(self, env_name):
         """Source conda_init.sh to set things that aren't set b/c we aren't 

@@ -6,10 +6,12 @@ import io
 from . import six
 import re
 import glob
+import logging
 import shutil
 import tempfile
 from . import util
 
+_log = logging.getLogger('mdtf.'+__name__)
 
 class ConfigManager(util.Singleton):
     def __init__(self, cli_obj=None, pod_info_tuple=None, unittest_flag=False):
@@ -38,7 +40,7 @@ class _PathManager(util.NameSpace):
     def parse(self, d, paths_to_parse=[], env=None):
         # set by CLI settings that have "parse_type": "path" in JSON entry
         if not paths_to_parse:
-            print("Warning: didn't get list of paths from CLI.")
+            _log.warning("Didn't get list of paths from CLI.")
         for key in paths_to_parse:
             self[key] = self._init_path(key, d, env=env)
             if key in d:
@@ -126,7 +128,7 @@ class TempDirManager(util.Singleton):
     def rm_tempdir(self, path):
         assert path in self._dirs
         self._dirs.remove(path)
-        print("\tDEBUG: cleanup temp dir {}".format(path))
+        _log.debug("Cleanup temp dir %s", path)
         shutil.rmtree(path)
 
     def cleanup(self):
@@ -135,7 +137,7 @@ class TempDirManager(util.Singleton):
 
 
 class VariableTranslator(util.Singleton):
-    def __init__(self, unittest_flag=False, verbose=0):
+    def __init__(self, unittest_flag=False):
         if unittest_flag:
             # value not used, when we're testing will mock out call to read_json
             # below with actual translation table to use for test
@@ -159,8 +161,7 @@ class VariableTranslator(util.Singleton):
         for filename in config_files:
             d = util.read_json(filename)
             for conv in util.coerce_to_iter(d['convention_name']):
-                if verbose > 0: 
-                    print('XXX found ', conv)
+                _log.debug('Found %s', conv)
                 self.axes[conv] = d.get('axes', dict())
                 self.variables[conv] = util.MultiMap(d.get('var_names', dict()))
                 self.units[conv] = util.MultiMap(d.get('units', dict()))
@@ -174,8 +175,9 @@ class VariableTranslator(util.Singleton):
         try:
             return util.coerce_from_iter(inv_lookup[varname_in])
         except KeyError:
-            print("ERROR: name {} not defined for convention {}.".format(
-                varname_in, convention))
+            _log.exception(
+                "Name %s not defined for convention %s.", varname_in, convention
+            )
             raise
     
     def fromCF(self, convention, varname_in):
@@ -186,35 +188,35 @@ class VariableTranslator(util.Singleton):
         try:
             return self.variables[convention].get_(varname_in)
         except KeyError:
-            print("ERROR: name {} not defined for convention {}.".format(
-                varname_in, convention))
+            _log.exception(
+                "Name %s not defined for convention %s.",
+                varname_in, convention
+            )
             raise
 
 
-def get_available_programs(verbose=0):
+def get_available_programs():
     return {'py': 'python', 'ncl': 'ncl', 'R': 'Rscript'}
     #return {'py': sys.executable, 'ncl': 'ncl'}  
 
-def setenv(varname,varvalue,env_dict,verbose=0,overwrite=True):
+def setenv(varname, varvalue, env_dict, overwrite=True):
     """Wrapper to set environment variables.
 
     Args:
         varname (:obj:`str`): Variable name to define
         varvalue: Value to assign. Coerced to type :obj:`str` before being set.
-        env_dict (:obj:`dict`): Copy of 
-        verbose (:obj:`int`, optional): Logging verbosity level. Default 0.
+        env_dict (:obj:`dict`): XXX
         overwrite (:obj:`bool`): If set to `False`, do not overwrite the values
             of previously-set variables. 
     """
-    if (not overwrite) and (varname in env_dict): 
-        if (verbose > 0): 
-            print("Not overwriting ENV {}={}".format(varname,env_dict[varname]))
+    if (not overwrite) and varname in env_dict: 
+        _log.debug("Not overwriting ENV %s=%s", varname, env_dict[varname])
     else:
-        if ('varname' in env_dict) \
-            and (env_dict[varname] != varvalue) and (verbose > 0): 
-            print("WARNING: setenv {}={} overriding previous setting {}".format(
+        if 'varname' in env_dict and env_dict[varname] != varvalue: 
+            _log.debug(
+                "WARNING: setenv %s=%s overriding previous setting %s",
                 varname, varvalue, env_dict[varname]
-            ))
+            )
         env_dict[varname] = varvalue
 
         # environment variables must be strings
@@ -227,47 +229,37 @@ def setenv(varname,varvalue,env_dict,verbose=0,overwrite=True):
             varvalue = str(varvalue)
         os.environ[varname] = varvalue
 
-        if (verbose > 0): print("ENV ",varname," = ",env_dict[varname])
-    if ( verbose > 2) : print("Check ",varname," ",env_dict[varname])
+        _log.debug("ENV %s=%s", varname, env_dict[varname])
 
 def check_required_envvar(*varlist):
-    verbose=0
     varlist = varlist[0]   #unpack tuple
-    for n in list(range(len(varlist))):
-        if ( verbose > 2):
-            print("checking envvar ", n, varlist[n], str(varlist[n]))
+    for n, var_n in enumerate(varlist):
+        _log.debug("checking envvar %s %s", n, var_n)
         try:
-            _ = os.environ[varlist[n]]
-        except:
-            print("ERROR: Required environment variable {} not found.".format(
-                varlist[n]
-            ))
-            exit()
+            _ = os.environ[var_n]
+        except KeyError:
+            _log.exception("Environment variable %s not found.", var_n)
+            raise
 
-def check_required_dirs(already_exist =[], create_if_nec = [], verbose=1):
+def check_required_dirs(already_exist =[], create_if_nec = []):
     # arguments can be envvar name or just the paths
-    filestr = __file__+":check_required_dirs: "
-    errstr = "ERROR "+filestr
-    if verbose > 1: filestr +" starting"
     for dir_in in already_exist + create_if_nec : 
-        if verbose > 1: "\t looking at "+dir_in
- 
+        _log.debug("Looking at %s", dir_in)
         if dir_in in os.environ:  
-            dir = os.environ[dir_in]
+            dir_ = os.environ[dir_in]
         else:
-            if verbose>2: print(" envvar "+dir_in+" not defined")    
-            dir = dir_in
+            _log.debug("Envvar %s not defined", dir_in)    
+            dir_ = dir_in
 
-        if not os.path.exists(dir):
+        if not os.path.exists(dir_):
             if not dir_in in create_if_nec:
-                if (verbose>0): 
-                    print(errstr+dir_in+" = "+dir+" directory does not exist")
-                raise OSError(dir+" directory does not exist")
+                _log.error("%s=%s directory does not exist", dir_in, dir_)
+                raise OSError("Directory {} does not exist".format(dir_))
             else:
-                print(dir+" created")
-                os.makedirs(dir)
+                _log.info("Creating %s", dir_)
+                os.makedirs(dir_)
         else:
-            print("Found "+dir)
+            _log.info("Found %s", dir_)
 
 def bump_version(path, new_v=None, extra_dirs=[]):
     # return a filename that doesn't conflict with existing files.
@@ -335,12 +327,12 @@ def append_html_template(template_file, target_file, template_dict={},
         html_str = html_str.format(**template_dict)
     if not os.path.exists(target_file):
         if create:
-            print("\tDEBUG: write {} to new {}".format(template_file, target_file))
+            _log.debug("Write %s to new %s", template_file, target_file)
             mode = 'w'
         else:
             raise OSError("Can't find {}".format(target_file))
     else:
-        print("\tDEBUG: append {} to {}".format(template_file, target_file))
+        _log.debug("Append %s to %s", template_file, target_file)
         mode = 'a'
     with io.open(target_file, mode, encoding='utf-8') as f:
         f.write(html_str)
