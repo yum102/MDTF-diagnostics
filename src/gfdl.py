@@ -401,8 +401,7 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
         return sorted(list(self.data_keys))
 
     def _fetch_exception_handler(self, exc):
-        if hasattr(exc, 'msg'):
-            _log.warning(exc.msg)
+        _log.warning(getattr(exc, 'msg', repr(exc)))
         # iterating over the keys themselves, so that will be what's passed 
         # in the exception
         for pod in self.data_pods[exc.dataset]:

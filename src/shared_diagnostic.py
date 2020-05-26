@@ -193,8 +193,7 @@ class Diagnostic(object):
             else:
                 _log.debug("%s: No known missing required input files", self.name)
         except PodRequirementFailure as exc:
-            if hasattr(exc, 'msg'):
-                _log.warning(exc.msg)
+            _log.warning(getattr(exc, 'msg', repr(exc)))
             raise exc
 
     def _set_pod_env_vars(self):

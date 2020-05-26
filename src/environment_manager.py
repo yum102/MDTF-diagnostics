@@ -312,7 +312,7 @@ class CondaEnvironmentManager(EnvironmentManager):
                     assert os.path.exists(self.conda_exe)
                 elif key == '_CONDA_ROOT':
                     self.conda_root = val
-        except:
+        except Exception:
             _log.exception("Can't find conda.")
             raise
 
@@ -332,7 +332,7 @@ class CondaEnvironmentManager(EnvironmentManager):
             _ = util.run_shell_command(
                 '{} env list | grep -qF "{}"'.format(self.conda_exe, conda_prefix)
             )
-        except:
+        except Exception:
             _log.exception(
                 "Conda env %s not found (grepped for %s)",
                 env_name, conda_prefix
@@ -358,7 +358,8 @@ class CondaEnvironmentManager(EnvironmentManager):
             )
         try:
             _ = util.run_shell_command(command)
-        except:
+        except Exception:
+            _log.exception("Couldn't create conda env %s", env_name)
             raise
 
     def create_all_environments(self):
@@ -367,7 +368,8 @@ class CondaEnvironmentManager(EnvironmentManager):
                 '{}/conda_env_setup.sh -c "{}" -d "{}" --all'.format(
                     self.conda_dir, self.conda_exe, self.conda_env_root
             ))
-        except:
+        except Exception:
+            _log.exception("Couldn't create all conda ens")
             raise
 
     def destroy_environment(self, env_name):

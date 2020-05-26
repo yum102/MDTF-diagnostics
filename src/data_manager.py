@@ -352,8 +352,7 @@ class DataManager(six.with_metaclass(ABCMeta)):
                 continue
 
     def _fetch_exception_handler(self, exc):
-        if hasattr(exc, 'msg'):
-            _log.warning(exc.msg)
+        _log.warning(getattr(exc, 'msg', repr(exc)))
         keys_from_file = self.data_files.inverse()
         for key in keys_from_file[exc.dataset]:
             for pod in self.data_pods[key]:
