@@ -335,28 +335,45 @@ class FrameworkCLIHandler(CLIHandler):
                     config_str = f.read()
             except Exception:
                 _log.exception("Can't read input file at %s.", config_path)
+        # try 
         if config_str:
+            # try to determine if file is json
+            is_json = 'json' in os.path.splitext('config_path')[1].lower()
+            # check if first non-comment, non-whitespace character is '{':
             try:
-                file_input = util.parse_json(config_str)
-                # overwrite default case_list and pod_list, if given
-                if 'case_list' in file_input:
-                    self.case_list = file_input.pop('case_list')
-                if 'pod_list' in file_input:
-                    self.pod_list = file_input.pop('pod_list')
-                # assume config_file a JSON dict of option:value pairs.
-                self.partial_defaults = [{
-                    self.canonical_arg_name(k): v for k,v in file_input.items()
-                }]
+                temp_str = util.strip_comments(config_str, delimiter= '//')
+                temp_ind = len(temp_str) - len(temp_str.lstrip())
+                is_json = is_json or (temp_str[temp_ind] == '{')
             except Exception:
-                if 'json' in os.path.splitext('config_path')[1].lower():
-                    _log.exception("ERROR: Couldn't parse JSON in %s.", config_path)
-                    raise
+                is_json = False
+            if is_json:
+                try:
+                    file_input = util.parse_json(config_str)
+                    # overwrite default case_list and pod_list, if given
+                    if 'case_list' in file_input:
+                        self.case_list = file_input.pop('case_list')
+                    if 'pod_list' in file_input:
+                        self.pod_list = file_input.pop('pod_list')
+                    # assume config_file a JSON dict of option:value pairs.
+                    self.partial_defaults = [{
+                        self.canonical_arg_name(k): v for k,v in file_input.items()
+                    }]
+                except Exception:
+                    _log.exception('Attempted to parse %s as JSONC; failed.',
+                        config_path)
+                    exit(1)
+            else:
                 # assume config_file is a plain text file containing flags, etc.
                 # as they would be passed on the command line.
-                config_str = util.strip_comments(config_str, '#')
-                self.partial_defaults = [vars(
-                    self.parser.parse_args(shlex.split(config_str))
-                )]
+                try:
+                    config_str = util.strip_comments(config_str, '#')
+                    self.partial_defaults = [vars(
+                        self.parser.parse_args(shlex.split(config_str))
+                    )]
+                except Exception:
+                    _log.exception('Attempted to parse %s as plain text; failed.',
+                        config_path)
+                    exit(1)
         # CLI opts override options set from file, which override defaults
         super(FrameworkCLIHandler, self).parse_cli(args)
 

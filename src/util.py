@@ -300,9 +300,14 @@ def read_json(file_path):
         with io.open(file_path, 'r', encoding='utf-8') as file_:
             str_ = file_.read()
     except IOError:
-        _log.critical('Fatal IOError when reading %s. Exiting.', file_path)
-        exit()
-    return parse_json(str_)
+        _log.exception('Fatal IOError when reading %s. Exiting.', file_path)
+        exit(1)
+    try:
+        str_ = parse_json(str_)
+    except (UnicodeDecodeError, json.decoder.JSONDecodeError):
+        _log.exception('JSON formatting error in file %s', file_path)
+        exit(1)
+    return str_
 
 def parse_json(str_):
     str_ = strip_comments(str_, delimiter= '//') # JSONC quasi-standard
@@ -310,7 +315,10 @@ def parse_json(str_):
         parsed_json = json.loads(str_, object_pairs_hook=collections.OrderedDict)
     except UnicodeDecodeError:
         _log.critical('Unicode error while deocding %s. Exiting.', str_)
-        exit()
+        raise
+    except json.decoder.JSONDecodeError:
+        _log.exception('JSON formatting error.')
+        raise
     return parsed_json
 
 def write_json(struct, file_path, sort_keys=False):
