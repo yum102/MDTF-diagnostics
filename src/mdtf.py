@@ -323,3 +323,5 @@ if __name__ == '__main__':
     _log.info("Starting %s", __file__)
     mdtf.main_loop()
     _log.info("Exiting normally from %s", __file__)
+    config = util_mdtf.ConfigManager()
+    _log.info("Output written to %s", config.paths.OUTPUT_DIR)
