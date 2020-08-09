@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
-from . import six
+from src import six
 import glob
 import copy
 import logging
@@ -17,11 +17,11 @@ if os.name == 'posix' and six.PY2:
         from subprocess import CalledProcessError
 else:
     from subprocess import CalledProcessError
-from . import util
-from . import util_mdtf
-from . import datelabel
-from . import netcdf_helper
-from .shared_diagnostic import PodRequirementFailure
+from src import util
+from src import util_mdtf
+from src import datelabel
+from src import netcdf_helper
+from src.shared_diagnostic import PodRequirementFailure
 
 _log = logging.getLogger('mdtf.'+__name__)
 
@@ -62,7 +62,7 @@ class DataAccessError(Exception):
 class DataSet(util.NameSpace):
     """Class to describe datasets.
 
-    `https://stackoverflow.com/a/48806603`_ for implementation.
+    `<https://stackoverflow.com/a/48806603>`__ for implementation.
     """
     def __init__(self, *args, **kwargs):
         if 'DateFreqMixin' not in kwargs:

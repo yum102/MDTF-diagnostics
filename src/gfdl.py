@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 import io
-from . import six
+from src import six
 import re
 import logging
 import shutil
@@ -16,21 +16,23 @@ from collections import defaultdict, namedtuple
 from itertools import chain
 from operator import attrgetter, itemgetter
 from abc import ABCMeta, abstractmethod, abstractproperty
-from . import datelabel
-from . import util
-from . import util_mdtf
-from . import conflict_resolution as choose
-from . import cmip6
-from .data_manager import DataSet, DataManager, DataAccessError
-from .environment_manager import VirtualenvEnvironmentManager, CondaEnvironmentManager
-from .shared_diagnostic import Diagnostic, PodRequirementFailure
-from .netcdf_helper import NcoNetcdfHelper # only option currently implemented
+from src import datelabel
+from src import util
+from src import util_mdtf
+import src.conflict_resolution as choose
+from src import cmip6
+from src.data_manager import DataSet, DataManager, DataAccessError
+from src.environment_manager import VirtualenvEnvironmentManager, CondaEnvironmentManager
+from src.shared_diagnostic import Diagnostic, PodRequirementFailure
+from src.netcdf_helper import NcoNetcdfHelper # only option currently implemented
 
 _log = logging.getLogger('mdtf.'+__name__)
 
 class ModuleManager(util.Singleton):
     _current_module_versions = {
-        'python':   'python/2.7.12',
+        'python2':   'python/2.7.12',
+        # most recent version common to analysis and workstations; use conda anyway
+        'python3':   'python/3.4.3',
         'ncl':      'ncarg/6.5.0',
         'r':        'R/3.4.4',
         'anaconda': 'anaconda2/5.1',
@@ -385,11 +387,12 @@ class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
         """Test whether data is current based on filesystem modification dates.
 
         TODO:
-        - Throw an error if local copy has been modified after remote copy. 
-        - Handle case where local data involves processing of remote data, like
-            ncrcat'ing. Copy raw remote files to temp directory if we need to 
-            process?
-        - gcp --sync does this already.
+            - Throw an error if local copy has been modified after remote copy. 
+            - Handle case where local data involves processing of remote data, like
+                ncrcat'ing. Copy raw remote files to temp directory if we need to 
+                process?
+            - gcp --sync does this already.
+
         """
         return False
         # return os.path.getmtime(dataset._local_data) \
@@ -974,7 +977,7 @@ frepp_translate = {
 def parse_frepp_stub(frepp_stub):
     """Converts the frepp arguments to a Python dictionary.
 
-    See `https://wiki.gfdl.noaa.gov/index.php/FRE_User_Documentation#Automated_creation_of_diagnostic_figures`_.
+    See `<https://wiki.gfdl.noaa.gov/index.php/FRE_User_Documentation#Automated_creation_of_diagnostic_figures>`__.
 
     Returns: :py:obj:`dict` of frepp parameters.
     """

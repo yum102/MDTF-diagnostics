@@ -1,17 +1,17 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
-from . import six
+from src import six
 import re
 import logging
-from . import datelabel
-from . import util
-from . import util_mdtf
+from src import datelabel
+from src import util
+from src import util_mdtf
 
 _log = logging.getLogger('mdtf.'+__name__)
 
 class CMIP6_CVs(util.Singleton):
-    def __init__(self, unittest_flag=False):
-        if unittest_flag:
+    def __init__(self, unittest=False):
+        if unittest:
             # value not used, when we're testing will mock out call to read_json
             # below with actual translation table to use for test
             file_ = 'dummy_filename'
@@ -88,7 +88,9 @@ class CMIP6_CVs(util.Singleton):
 
 @six.python_2_unicode_compatible
 class CMIP6DateFrequency(datelabel.DateFrequency):
-    # http://goo.gl/v1drZl, page 16
+    """
+    `<http://goo.gl/v1drZl>`__, page 16
+    """
     _precision_lookup = {
         'fx': 0, 'yr': 1, 'mo': 2, 'day': 3,
         'hr': 5, # includes minutes

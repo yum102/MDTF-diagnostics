@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 import io
-from . import six
+from src import six
 import glob
 import logging
 import shutil
@@ -15,9 +15,9 @@ if os.name == 'posix' and six.PY2:
         import subprocess
 else:
     import subprocess
-from . import util
-from . import util_mdtf
-from .shared_diagnostic import PodRequirementFailure
+from src import util
+from src import util_mdtf
+from src.shared_diagnostic import PodRequirementFailure
 
 _log = logging.getLogger('mdtf.'+__name__)
 
@@ -385,8 +385,11 @@ class CondaEnvironmentManager(EnvironmentManager):
                 pod.env = self.env_name_prefix + 'R_base'
             elif 'ncl' in langs:
                 pod.env = self.env_name_prefix + 'NCL_base'
-            elif 'python' in langs:
-                pod.env = self.env_name_prefix + 'python_base'
+            elif 'python2' in langs:
+                raise NotImplementedError('Python 2 not supported for new PODs.')
+                # pod.env = self.env_name_prefix + 'python2_base'
+            elif 'python3' in langs:
+                pod.env = self.env_name_prefix + 'python3_base'
             else:
                 _log.error(
                     "Can't find environment providing %s",

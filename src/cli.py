@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 import io
-from . import six
+from src import six
 if six.PY2:
     from ConfigParser import _Chainmap as ChainMap
 else:
@@ -10,7 +10,7 @@ import argparse
 import logging
 import shlex
 import collections
-from . import util
+from src import util
 
 _log = logging.getLogger('mdtf.'+__name__)
 
@@ -20,9 +20,9 @@ class CustomHelpFormatter(
     ):
     """Modify help text formatter to only display variable placeholder 
     ("metavar") once, to save space. Taken from 
-    https://stackoverflow.com/a/16969505 . Also inherit from 
+    `<https://stackoverflow.com/a/16969505>`__ . Also inherit from 
     RawDescriptionHelpFormatter in order to preserve line breaks in description
-    only (https://stackoverflow.com/a/18462760).
+    only (`<https://stackoverflow.com/a/18462760>`__).
     """
     def __init__(self, *args, **kwargs):
         # tweak indentation of help strings
@@ -55,7 +55,7 @@ class CustomHelpFormatter(
 
 class RecordDefaultsAction(argparse.Action):
     """Add boolean to record if user actually set argument's value, or if we're
-    using the specified default. From https://stackoverflow.com/a/50936474. This
+    using the specified default. From `<https://stackoverflow.com/a/50936474>`__. This
     also re-implements the 'store_true' and 'store_false' actions, in order to 
     give defaults information on boolean flags.
     """
@@ -90,9 +90,7 @@ class CLIHandler(object):
     def __init__(self, code_root, cli_config, partial_defaults=None):
         self.code_root = code_root
         self.config = dict()
-        if isinstance(partial_defaults, dict):
-            partial_defaults = [partial_defaults] # not handled correctly by coerce_to_iter
-        self.partial_defaults = util.coerce_to_iter(partial_defaults)
+        self.partial_defaults = partial_defaults
         self.parser_groups = dict()
         # no way to get this from public interface? _actions of group
         # contains all actions for entire parser
@@ -236,21 +234,31 @@ class CLIHandler(object):
                 self.is_default[arg.dest] = (arg.dest is arg.default)
 
     def parse_cli(self, args=None):
+        # call preparse_cli if child class hasn't done so already
         if not self.config:
             self.preparse_cli(args)
+
         # if no additional defaults were set, that's sufficient, otherwise need
         # to take into account their intermediate priority
+        if isinstance(self.partial_defaults, dict):
+            # not handled correctly by coerce_to_iter
+            self.partial_defaults = [self.partial_defaults] 
+        self.partial_defaults = util.coerce_to_iter(self.partial_defaults)
+        partial_defaults = []
+        for d in self.partial_defaults:
+            # drop empty strings
+            partial_defaults.append({k:v for k,v in d.items() if v != ""})
 
-        if self.partial_defaults:
-            # Options explicitly set by user on CLI; is_default = None if no default
-            cli_opts = {k:v for k,v in iter(self.config.items()) \
-                if not self.is_default.get(k, True)}
-            # full set of defaults from cli.jsonc, from running parser on empty input
-            defaults = vars(self.parser.parse_args([]))
-            chained_dict_list = [cli_opts] + self.partial_defaults + [defaults]
+        # self.config was populated by preparse_cli()
+        # Options explicitly set by user on CLI; is_default = None if no default
+        cli_opts = {k:v for k,v in self.config.items() \
+            if not self.is_default.get(k, True)}
+        # full set of defaults from cli.jsonc, from running parser on empty input
+        defaults = vars(self.parser.parse_args([]))
+        chained_dict_list = [cli_opts] + partial_defaults + [defaults]
 
-            # CLI opts override options set from file, which override defaults
-            self.config = dict(ChainMap(*chained_dict_list))
+        # CLI opts override options set from file, which override defaults
+        self.config = dict(ChainMap(*chained_dict_list))
 
 
 class FrameworkCLIHandler(CLIHandler):
@@ -337,7 +345,7 @@ class FrameworkCLIHandler(CLIHandler):
                     self.pod_list = file_input.pop('pod_list')
                 # assume config_file a JSON dict of option:value pairs.
                 self.partial_defaults = [{
-                    self.canonical_arg_name(k): v for k,v in iter(file_input.items())
+                    self.canonical_arg_name(k): v for k,v in file_input.items()
                 }]
             except Exception:
                 if 'json' in os.path.splitext('config_path')[1].lower():

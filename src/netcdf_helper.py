@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
-from . import six
+from src import six
 import io
 import logging
 import shutil
@@ -11,9 +11,9 @@ if os.name == 'posix' and six.PY2:
         import subprocess
 else:
     import subprocess
-from . import datelabel
-from . import util
-from . import util_mdtf
+from src import datelabel
+from src import util
+from src import util_mdtf
 import xml.etree.ElementTree as ET
 from six.moves import getcwd
 
@@ -94,7 +94,7 @@ class NetcdfHelper(object):
 def _nco_outfile_decorator(function):
     """Wrapper handling cleanup for NCO operations that modify files.
     NB must come between classmethod and base function definition.
-    See https://stackoverflow.com/a/18732038. 
+    See `<https://stackoverflow.com/a/18732038>`__. 
     """
     def wrapper(*args, **kwargs):
         if 'out_file' not in kwargs or kwargs['out_file'] is None:
@@ -214,7 +214,7 @@ class NcoNetcdfHelper(NetcdfHelper):
         in_file=None, out_file=None, cwd=None, dry_run=False):
         """Unit conversion of several variables in a file.
 
-        See http://nco.sourceforge.net/nco.html#UDUnits-script. Requires
+        See `<http://nco.sourceforge.net/nco.html#UDUnits-script>`__. Requires
         NCO > 4.6.3.
         """
         # ncap2 errors if var doesn't have a units attribute, and will do 
