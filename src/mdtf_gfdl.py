@@ -12,6 +12,7 @@ if sys.version_info[0] == 2 and sys.version_info[1] < 7:
 import os
 import shutil
 import tempfile
+import logging
 from src import util
 from src import util_mdtf
 from src import mdtf
@@ -20,6 +21,8 @@ from src import environment_manager
 from src import shared_diagnostic
 from src import netcdf_helper
 from src import gfdl
+
+_log = logging.getLogger('mdtf.'+__name__)
 
 class GFDLMDTFFramework(mdtf.MDTFFramework):
     # add gfdl to search path for DataMgr, EnvMgr
@@ -95,8 +98,8 @@ class GFDLMDTFFramework(mdtf.MDTFFramework):
             case_outdir = case_outdir.MODEL_OUT_DIR
             for p in requested_pods:
                 if os.path.isdir(os.path.join(case_outdir, p)):
-                    print(("\tDEBUG: preexisting {} in {}; "
-                        "skipping b/c frepp mode").format(p, case_outdir))
+                    _log.debug("Preexisting %s in %s; skipping b/c frepp mode.",
+                        p, case_outdir)
             return [p for p in requested_pods if not \
                 os.path.isdir(os.path.join(case_outdir, p))
             ]
@@ -106,29 +109,29 @@ def fetch_obs_data(source_dir, dest_dir, timeout=0, dry_run=False):
     if source_dir == dest_dir:
         return
     if not os.path.exists(source_dir) or not os.listdir(source_dir):
-        print("Observational data directory at {} is empty.".format(source_dir))
+        _log.critical("Observational data directory at %s is empty.", source_dir)
     if not os.path.exists(dest_dir) or not os.listdir(dest_dir):
-        print("Observational data directory at {} is empty.".format(dest_dir))
+        _log.debug("Observational data directory at %s is empty.", dest_dir)
     if gfdl.running_on_PPAN():
-        print("\tGCPing data from {}.".format(source_dir))
+        _log.info("GCPing obs data from %s.", source_dir)
         # giving -cd to GCP, so will create dirs
         gfdl.gcp_wrapper(
             source_dir, dest_dir, timeout=timeout, dry_run=dry_run
         )
     else:
-        print("\tSymlinking obs data dir to {}.".format(source_dir))
+        _log.info("Symlinking obs data dir to %s.", source_dir)
         dest_parent = os.path.dirname(dest_dir)
         if os.path.exists(dest_dir):
             assert os.path.isdir(dest_dir)
             try:
                 os.remove(dest_dir) # remove symlink only, not source dir
             except OSError:
-                print('Warning: expected symlink at {}'.format(dest_dir))
+                _log.warning('Expected symlink at %s', dest_dir)
                 os.rmdir(dest_dir)
         elif not os.path.exists(dest_parent):
             os.makedirs(dest_parent)
         if dry_run:
-            print('DRY_RUN: symlink {} -> {}'.format(source_dir, dest_dir))
+            _log.info('DRY_RUN: symlink %s -> %s', source_dir, dest_dir)
         else:
             os.symlink(source_dir, dest_dir)
 
@@ -141,6 +144,6 @@ if __name__ == '__main__':
         # print('Warning: site-specific cli_gfdl.jsonc not found, using template.')
         defaults_rel_path = os.path.join(src_dir, 'cli_template.jsonc')
     mdtf = GFDLMDTFFramework(code_root, defaults_rel_path)
-    print("\n======= Starting {}".format(__file__))
+    _log.info("Starting %s", __file__)
     mdtf.main_loop()
-    print("Exiting normally from {}".format(__file__))
+    _log.info("Exiting normally from %s", __file__)

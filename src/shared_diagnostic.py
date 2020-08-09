@@ -491,7 +491,8 @@ class Diagnostic(object):
         verifier = verify_links.LinkVerifier(self.POD_HTML, verbose=False)
         missing_out = verifier.verify_pod_links(self.name)
         if missing_out:
-            print('ERROR: {} has missing output files.'.format(self.name))
+            _log.error('%s has %s missing output files:', self.name, len(missing_out))
+            _log.error('%s', str(missing_out))
             template_dict = self.__dict__.copy()
             template_dict['missing_output'] = '<br>'.join(missing_out)
             util_mdtf.append_html_template(
