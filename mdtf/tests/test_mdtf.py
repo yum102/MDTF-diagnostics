@@ -1,8 +1,8 @@
 import os
 import unittest
 import mock # define mock os.environ so we don't mess up real env vars
-from src.mdtf import MDTFFramework
-import src.util_mdtf as util
+from mdtf.mdtf import MDTFFramework
+import mdtf.util_mdtf as util
 
 @unittest.skip("")
 class TestMDTFArgParsing(unittest.TestCase):
@@ -37,7 +37,7 @@ class TestMDTFArgParsing(unittest.TestCase):
         self.assertEqual(config['paths']['C'], '/X')
         self.assertEqual(config['settings']['E'], 'Y')
 
-    @mock.patch('src.util.check_required_dirs')
+    @mock.patch('mdtf.util.check_required_dirs')
     def test_set_mdtf_env_vars_config_settings(self, mock_check_required_dirs):
         # NB env vars now only written to OS by pod's setUp (not here)
         # set settings from config file
@@ -46,14 +46,14 @@ class TestMDTFArgParsing(unittest.TestCase):
         mdtf.set_mdtf_env_vars()
         self.assertEqual(mdtf.config['envvars']['E'], 'F')      
 
-    @mock.patch('src.util.check_required_dirs')
+    @mock.patch('mdtf.util.check_required_dirs')
     def test_sset_mdtf_env_vars_config_rgb(self, mock_check_required_dirs):
         # NB env vars now only written to OS by pod's setUp (not here)
         # set path to /RGB from os.environ
         mdtf = MDTFFramework.__new__(MDTFFramework)
         mdtf.config = self.config_test.copy()
         mdtf.set_mdtf_env_vars()
-        self.assertEqual(mdtf.config['envvars']['RGB'], 'TEST_CODE_ROOT/src/rgb')
+        self.assertEqual(mdtf.config['envvars']['RGB'], 'TEST_CODE_ROOT/mdtf/rgb')
 
 # ---------------------------------------------------
 

@@ -7,8 +7,8 @@ if os.name == 'posix' and sys.version_info[0] < 3:
         import subprocess
     else:
         import subprocess
-from src.util import read_json, NameSpace, coerce_to_iter
-from src import util_mdtf
+from mdtf.util import read_json, NameSpace, coerce_to_iter
+from mdtf import util_mdtf
 import collections
 
 def setUp_ConfigManager(config=None, paths=None, pods=None, unittest=True):
@@ -61,7 +61,7 @@ def get_configuration(config_file='', check_input=False, check_output=False):
     cwd = os.path.dirname(os.path.realpath(__file__)) # gets dir of currently executing script
     code_root = os.path.realpath(os.path.join(cwd, '..')) # parent dir of that
     if config_file == '':
-        config_file = os.path.join(cwd,'..','src','mdtf_settings.json') # default
+        config_file = os.path.join(cwd,'..','mdtf','mdtf_settings.json') # default
     config = read_json(config_file)
     config = parse_mdtf_args(None, config, rel_paths_root=code_root)
     config['paths']['md5_path'] = os.path.join(cwd,'checksums')

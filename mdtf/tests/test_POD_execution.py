@@ -8,7 +8,7 @@ if os.name == 'posix' and sys.version_info[0] < 3:
         import subprocess
     else:
         import subprocess
-from src.util import write_json
+from mdtf.util import write_json
 from tests import shared_test_utils as shared
 
 DOING_TRAVIS = (os.environ.get('TRAVIS', False) == 'true')
@@ -47,7 +47,7 @@ class TestSequenceMeta(type):
             def test(self):
                 temp_config_file = os.path.join(out_path, pod_name+'_temp.json')
                 self.assertEqual(0, subprocess.check_call(
-                    ['python', 'src/mdtf.py', temp_config_file]
+                    ['python', 'mdtf/mdtf.py', temp_config_file]
                 ))
                 # should do better cleanup here
             return test       

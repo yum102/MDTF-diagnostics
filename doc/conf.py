@@ -17,7 +17,6 @@ import sys
 cwd = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.abspath(cwd))
 sys.path.insert(0, os.path.abspath(os.path.join(cwd, '..')))
-sys.path.insert(0, os.path.abspath(os.path.join(cwd, '..', 'src')))
 
 # AutoStructify needed for getting full Sphinx features from markdown (.md) files
 # https://recommonmark.readthedocs.io/en/latest/auto_structify.html
@@ -307,7 +306,7 @@ autodoc_default_options = {
     'undoc-members': True,
     'show-inheritance': True
 }
-# For simplicty, the six.py library is included directly in the /src module, 
+# For simplicty, the six.py library is included directly in the /mdtf module, 
 # but we don't want to document it.
 # https://stackoverflow.com/a/21449475
 def autodoc_skip_member(app, what, name, obj, skip, options):

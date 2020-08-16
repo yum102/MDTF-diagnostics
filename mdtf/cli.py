@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 import io
-from src import six
+from mdtf import six
 if six.PY2:
     from ConfigParser import _Chainmap as ChainMap
 else:
@@ -9,7 +9,7 @@ else:
 import argparse
 import shlex
 import collections
-from src import util
+from mdtf import util
 
 class CustomHelpFormatter(
         argparse.RawDescriptionHelpFormatter, 

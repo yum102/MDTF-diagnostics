@@ -1,7 +1,7 @@
 import os
 import unittest
 import mock # define mock os.environ so we don't mess up real env vars
-import src.util as util
+import mdtf.util as util
 
 class TestBasicClasses(unittest.TestCase):
     def test_singleton(self):

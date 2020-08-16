@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
-from src import six
+from mdtf import six
 import glob
 import copy
 import shutil
@@ -16,11 +16,11 @@ if os.name == 'posix' and six.PY2:
         from subprocess import CalledProcessError
 else:
     from subprocess import CalledProcessError
-from src import util
-from src import util_mdtf
-from src import datelabel
-from src import netcdf_helper
-from src.diagnostic import PodRequirementFailure
+from mdtf import util
+from mdtf import util_mdtf
+from mdtf import datelabel
+from mdtf import netcdf_helper
+from mdtf.diagnostic import PodRequirementFailure
 
 
 @six.python_2_unicode_compatible
@@ -464,7 +464,7 @@ class DataManager(six.with_metaclass(ABCMeta)):
         self._copy_to_output()
 
     def _make_html(self, cleanup=True):
-        src_dir = os.path.join(self.code_root, 'src', 'html')
+        src_dir = os.path.join(self.code_root, 'mdtf', 'html')
         dest = os.path.join(self.MODEL_WK_DIR, 'index.html')
         if os.path.isfile(dest):
             print("WARNING: index.html exists, deleting.")

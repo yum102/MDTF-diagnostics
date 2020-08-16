@@ -2,8 +2,8 @@ import os
 import sys
 import unittest
 import mock # define mock os.environ so we don't mess up real env vars
-import src.util as util
-from src.environment_manager import EnvironmentManager
+import mdtf.util as util
+from mdtf.environment_manager import EnvironmentManager
 
 class TestEnvironmentManager(unittest.TestCase):
     test_config = {'case_list':[{}], 'pod_list':['X']}
@@ -16,7 +16,7 @@ class TestEnvironmentManager(unittest.TestCase):
     # ---------------------------------------------------
 
     # @mock.patch.dict('os.environ', {'DIAG_HOME':'/HOME'})
-    # @mock.patch('src.diagnostic.util.read_json', return_value = {
+    # @mock.patch('mdtf.diagnostic.util.read_json', return_value = {
     #     'settings':{'driver':'C.ncl', 'program':'nonexistent_program'}, 'varlist':[]
     #     })
     # @mock.patch('os.path.exists', return_value = True)

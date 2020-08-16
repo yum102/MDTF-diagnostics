@@ -1,9 +1,9 @@
 import os
 import unittest
 import mock # define mock os.environ so we don't mess up real env vars
-import src.util_mdtf as util_mdtf
-from src.diagnostic import Diagnostic
-from src.data_manager import DataManager
+import mdtf.util_mdtf as util_mdtf
+from mdtf.diagnostic import Diagnostic
+from mdtf.data_manager import DataManager
 from tests.shared_test_utils import setUp_ConfigManager, tearDown_ConfigManager
 
 @mock.patch.multiple(DataManager, __abstractmethods__=set())
@@ -26,7 +26,7 @@ class TestDataManagerSetup(unittest.TestCase):
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     }
 
-    @mock.patch('src.util_mdtf.util.read_json', return_value=dummy_var_translate)
+    @mock.patch('mdtf.util_mdtf.util.read_json', return_value=dummy_var_translate)
     def setUp(self, mock_read_json):
         setUp_ConfigManager(
             config=self.default_case, 
@@ -54,7 +54,7 @@ class TestDataManagerSetup(unittest.TestCase):
         self.assertEqual(os.environ['pr_var'], 'PRECT')
         self.assertEqual(os.environ['prc_var'], 'PRECC')
 
-    @mock.patch('src.util_mdtf.check_required_dirs')
+    @mock.patch('mdtf.util_mdtf.check_required_dirs')
     def test_set_model_env_vars_no_model(self, mock_check_required_dirs):
         # exit if can't find model
         case = DataManager(self.default_case)
@@ -101,7 +101,7 @@ class TestDataManagerSetupNonCFPod(unittest.TestCase):
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     }
 
-    @mock.patch('src.util_mdtf.util.read_json', return_value=dummy_var_translate)
+    @mock.patch('mdtf.util_mdtf.util.read_json', return_value=dummy_var_translate)
     def setUp(self, mock_read_json):
         setUp_ConfigManager(
             config=self.default_case, 
@@ -130,7 +130,7 @@ class TestDataManagerSetupNonCFPod(unittest.TestCase):
         self.assertEqual(pod.varlist[0].name_in_model, 'PRECT')
 
     @unittest.skip("")
-    @mock.patch('src.diagnostic.util.read_json', return_value = {
+    @mock.patch('mdtf.diagnostic.util.read_json', return_value = {
         'settings':{'conda_env':'B'},'varlist':[]})
     def test_parse_pod_settings_conda_env(self, mock_read_json):
         # fill in conda environment 
@@ -140,7 +140,7 @@ class TestDataManagerSetupNonCFPod(unittest.TestCase):
 
 @unittest.skip("")
 class TestDataManagerFetchData(unittest.TestCase):    
-    @mock.patch('src.util.read_json', 
+    @mock.patch('mdtf.util.read_json', 
         return_value = {
             'convention_name':'not_CF',
             'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}

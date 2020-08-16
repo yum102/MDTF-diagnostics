@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 import io
-from src import six
+from mdtf import six
 import glob
 import shutil
 import atexit
@@ -14,9 +14,9 @@ if os.name == 'posix' and six.PY2:
         import subprocess
 else:
     import subprocess
-from src import util
-from src import util_mdtf
-from src.diagnostic import PodRequirementFailure
+from mdtf import util
+from mdtf import util_mdtf
+from mdtf.diagnostic import PodRequirementFailure
 
 class EnvironmentManager(six.with_metaclass(ABCMeta)):
     # analogue of TestSuite in xUnit - abstract base class
@@ -285,7 +285,7 @@ class CondaEnvironmentManager(EnvironmentManager):
 
         config = util_mdtf.ConfigManager()
         self.code_root = config.paths.CODE_ROOT
-        self.conda_dir = os.path.join(self.code_root, 'src','conda')
+        self.conda_dir = os.path.join(self.code_root, 'mdtf','conda')
         self.env_list = []
         for file_ in os.listdir(self.conda_dir):
             if file_.endswith('.yml'):

@@ -18,9 +18,9 @@ import stat
 import ftplib
 import socket
 import shutil
-from src import cli
-from src import util
-from src.verify_links import LinkVerifier
+from mdtf import cli
+from mdtf import util
+from mdtf.verify_links import LinkVerifier
 
 
 # ------------------------------------------------------------------------------

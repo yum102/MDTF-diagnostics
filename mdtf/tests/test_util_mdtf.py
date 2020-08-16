@@ -3,9 +3,9 @@ import unittest
 from collections import namedtuple
 import itertools
 import mock # define mock os.environ so we don't mess up real env vars
-import src.util_mdtf as util_mdtf
-from src.data_manager import DataManager
-from src.diagnostic import Diagnostic
+import mdtf.util_mdtf as util_mdtf
+from mdtf.data_manager import DataManager
+from mdtf.diagnostic import Diagnostic
 from subprocess import CalledProcessError
 from tests.shared_test_utils import setUp_ConfigManager, tearDown_ConfigManager
 
@@ -173,7 +173,7 @@ class TestVariableTranslator(unittest.TestCase):
         # in the first test instead of being properly initialized
         tearDown_ConfigManager()
 
-    @mock.patch('src.util_mdtf.util.read_json', return_value = {
+    @mock.patch('mdtf.util_mdtf.util.read_json', return_value = {
         'convention_name':'not_CF',
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     })
@@ -182,7 +182,7 @@ class TestVariableTranslator(unittest.TestCase):
         self.assertEqual(temp.toCF('not_CF', 'PRECT'), 'pr_var')
         self.assertEqual(temp.fromCF('not_CF', 'pr_var'), 'PRECT')
 
-    @mock.patch('src.util_mdtf.util.read_json', return_value = {
+    @mock.patch('mdtf.util_mdtf.util.read_json', return_value = {
         'convention_name':'not_CF',
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     })
@@ -191,7 +191,7 @@ class TestVariableTranslator(unittest.TestCase):
         self.assertEqual(temp.toCF('CF', 'pr_var'), 'pr_var')
         self.assertEqual(temp.fromCF('CF', 'pr_var'), 'pr_var')
 
-    @mock.patch('src.util_mdtf.util.read_json', return_value = {
+    @mock.patch('mdtf.util_mdtf.util.read_json', return_value = {
         'convention_name':'not_CF',
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     })
@@ -210,7 +210,7 @@ class TestVariableTranslatorReadFiles(unittest.TestCase):
     def tearDown(self):
         tearDown_ConfigManager()
 
-    @mock.patch('src.util_mdtf.util.read_json', return_value = {
+    @mock.patch('mdtf.util_mdtf.util.read_json', return_value = {
         'convention_name':'A','var_names':{'B':'D'}
     })
     def test_read_model_varnames(self, mock_read_json):
@@ -219,7 +219,7 @@ class TestVariableTranslatorReadFiles(unittest.TestCase):
         self.assertEqual(temp.fromCF('A','B'), 'D')
         temp._reset()
 
-    @mock.patch('src.util_mdtf.util.read_json', return_value = {
+    @mock.patch('mdtf.util_mdtf.util.read_json', return_value = {
         'convention_name':['A','C'],'var_names':{'B':'D'}
     })
     def test_read_model_varnames_multiple(self, mock_read_json):

@@ -1,11 +1,11 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
-from src import six
+from mdtf import six
 import glob
 import shutil
-from src import util
-from src import util_mdtf
-from src import verify_links
+from mdtf import util
+from mdtf import util_mdtf
+from mdtf import verify_links
 
 
 @six.python_2_unicode_compatible
@@ -406,7 +406,7 @@ class Diagnostic(object):
 
         Called by :meth:`environment_manager.EnvironmentManager.run`. 
         Dependencies are passed as arguments to the shell script 
-        ``src/validate_environment.sh``, which is invoked in the POD's subprocess
+        ``mdtf/validate_environment.sh``, which is invoked in the POD's subprocess
         before the POD is run.
 
         Returns:
@@ -414,7 +414,7 @@ class Diagnostic(object):
                 the POD's runtime environment.
         """
         # pylint: disable=maybe-no-member
-        command_path = os.path.join(self.code_root, 'src', 'validate_environment.sh')
+        command_path = os.path.join(self.code_root, 'mdtf', 'validate_environment.sh')
         command = [
             command_path,
             ' -v',
@@ -473,8 +473,8 @@ class Diagnostic(object):
             source_files,
             self.POD_CODE_DIR,
             self.POD_WK_DIR,
-            copy_function=lambda src, dest: util_mdtf.append_html_template(
-                src, dest, template_dict=template, append=False
+            copy_function=lambda mdtf, dest: util_mdtf.append_html_template(
+                mdtf, dest, template_dict=template, append=False
             ),
             overwrite=True
         )
@@ -492,16 +492,16 @@ class Diagnostic(object):
                 raised during POD's attempted execution. If this is None, assume
                 that POD ran successfully.
         """
-        src_dir = os.path.join(self.code_root, 'src', 'html')
+        src_dir = os.path.join(self.code_root, 'mdtf', 'html')
         template_dict = self.__dict__.copy()
         if error is None:
             # normal exit
-            src = os.path.join(src_dir, 'pod_result_snippet.html')
+            mdtf = os.path.join(src_dir, 'pod_result_snippet.html')
         else:
             # report error
-            src = os.path.join(src_dir, 'pod_error_snippet.html')
+            mdtf = os.path.join(src_dir, 'pod_error_snippet.html')
             template_dict['error_text'] = str(error)
-        util_mdtf.append_html_template(src, self.TEMP_HTML, template_dict)
+        util_mdtf.append_html_template(mdtf, self.TEMP_HTML, template_dict)
 
     def verify_pod_links(self):
         """Check for missing files linked to from POD's html page.
@@ -510,7 +510,7 @@ class Diagnostic(object):
         calls LinkVerifier to check existence of all files linked to from the 
         POD's own top-level html page (after templating). If any files are
         missing, an error message listing them is written to the run's index.html 
-        (located in src/html/pod_missing_snippet.html).
+        (located in mdtf/html/pod_missing_snippet.html).
         """
         verifier = verify_links.LinkVerifier(
             self.POD_HTML, os.path.dirname(self.POD_WK_DIR), verbose=False
@@ -521,7 +521,7 @@ class Diagnostic(object):
             template_dict = self.__dict__.copy()
             template_dict['missing_output'] = '<br>'.join(missing_out)
             util_mdtf.append_html_template(
-                os.path.join(self.code_root,'src','html','pod_missing_snippet.html'),
+                os.path.join(self.code_root,'mdtf','html','pod_missing_snippet.html'),
                 self.TEMP_HTML, template_dict
             )
 

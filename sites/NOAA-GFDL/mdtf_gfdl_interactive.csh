@@ -114,7 +114,7 @@ mkdir "${INPUT_DIR}/model"
 gcp -v -r "gfdl:${OBS_DATA_DIR}/" "gfdl:${INPUT_DIR}/obs_data/"
 
 ## make sure we have python dependencies
-${REPO_DIR}/src/validate_environment.sh -v -a subprocess32 -a pyyaml
+${REPO_DIR}/mdtf/validate_environment.sh -v -a subprocess32 -a pyyaml
 if ( $status != 0 ) then
     echo 'Installing required modules'
     mkdir -p "${REPO_DIR}/envs/venv"
@@ -136,7 +136,7 @@ endif
 
 ## run the command (unbuffered output)
 echo 'script start'
-/usr/bin/env python -u "${REPO_DIR}/src/mdtf.py" \
+/usr/bin/env python -u "${REPO_DIR}/mdtf/mdtf.py" \
 --MODEL_DATA_ROOT "${INPUT_DIR}/model" \
 --OBS_DATA_ROOT "${INPUT_DIR}/obs_data" \
 --WORKING_DIR "$WK_DIR" \

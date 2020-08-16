@@ -1,9 +1,9 @@
 import os
 import unittest
 import datetime
-from src.datelabel import Date as dt
-from src.datelabel import DateRange as dt_range
-from src.datelabel import DateFrequency as dt_freq
+from mdtf.datelabel import Date as dt
+from mdtf.datelabel import DateRange as dt_range
+from mdtf.datelabel import DateFrequency as dt_freq
 
 class TestDate(unittest.TestCase):
     def test_init(self):

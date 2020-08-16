@@ -8,7 +8,7 @@ import glob
 import shutil
 import string
 import tempfile
-from src import util
+from mdtf import util
 
 
 class ConfigManager(util.Singleton):
@@ -143,7 +143,7 @@ class VariableTranslator(util.Singleton):
         else:
             config = ConfigManager()
             glob_pattern = os.path.join(
-                config.paths.CODE_ROOT, 'src', 'fieldlist_*.jsonc'
+                config.paths.CODE_ROOT, 'mdtf', 'fieldlist_*.jsonc'
             )
             config_files = glob.glob(glob_pattern)
         # always have CF-compliant option, which does no translation

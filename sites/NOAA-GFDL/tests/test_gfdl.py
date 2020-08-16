@@ -9,8 +9,8 @@ if os.name == 'posix' and sys.version_info[0] < 3:
     else:
         import subprocess
 from tests import shared_test_utils as shared
-import src.gfdl as gfdl
-from src.mdtf import MDTFFramework
+import mdtf.gfdl as gfdl
+from mdtf.mdtf import MDTFFramework
 
 DOING_TRAVIS = (os.environ.get('TRAVIS', False) == 'true')
 DOING_MDTF_DATA_TESTS = ('--data_tests' in sys.argv)

@@ -8,10 +8,10 @@
       "conda_exe": "conda",
       "conda_root": "",
       "conda_env_root": "",
-      "src_dir": "src/conda",
-      "init_script": "src/conda/conda_init.sh",
-      "setup_script": "src/conda/conda_env_setup.sh",
-      "yaml_path": "src/conda/env_{}.yml",
+      "src_dir": "mdtf/conda",
+      "init_script": "mdtf/conda/conda_init.sh",
+      "setup_script": "mdtf/conda/conda_env_setup.sh",
+      "yaml_path": "mdtf/conda/env_{}.yml",
       "env_prefix": "_MDTF",
       "framework_env": "base",
       "include_envs": ["base"],
@@ -57,9 +57,9 @@
       }
     },
     "cli_defaults": {
-      "template": "src/cli_template.jsonc",
-      "config_in": "src/default_tests.jsonc",
-      "config_out": "src/default_tests_out.jsonc",
+      "template": "mdtf/cli_template.jsonc",
+      "config_in": "mdtf/default_tests.jsonc",
+      "config_out": "mdtf/default_tests_out.jsonc",
       "default_keys": [
         "MODEL_DATA_ROOT", "OBS_DATA_ROOT", "WORKING_DIR", "OUTPUT_DIR", 
         "conda_root", "conda_env_root", "venv_root", "r_lib_root",

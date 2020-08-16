@@ -136,7 +136,7 @@ wipetmp
 
 ## run the command (unbuffered output)
 echo 'script start'
-/usr/bin/env python -u "${REPO_DIR}/src/mdtf_gfdl.py" \
+/usr/bin/env python -u "${REPO_DIR}/mdtf/mdtf_gfdl.py" \
 --frepp \
 --MODEL_DATA_ROOT "${INPUT_DIR}/model" \
 --OBS_DATA_ROOT "${INPUT_DIR}/obs_data" \

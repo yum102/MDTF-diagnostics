@@ -1,10 +1,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
-from src import six
+from mdtf import six
 import re
-from src import datelabel
-from src import util
-from src import util_mdtf
+from mdtf import datelabel
+from mdtf import util
+from mdtf import util_mdtf
 
 class CMIP6_CVs(util.Singleton):
     def __init__(self, unittest=False):
@@ -14,7 +14,7 @@ class CMIP6_CVs(util.Singleton):
             file_ = 'dummy_filename'
         else:
             config = util_mdtf.ConfigManager()
-            file_ = os.path.join(config.paths.CODE_ROOT, 'src', 
+            file_ = os.path.join(config.paths.CODE_ROOT, 'mdtf', 
                 'cmip6-cmor-tables','Tables','CMIP6_CV.json')
         self._contents = util.read_json(file_)
         self._contents = self._contents['CV']

@@ -4,7 +4,7 @@ Specifically, util.py implements general functionality that's not MDTF-specific.
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 import io
-from src import six
+from mdtf import six
 import re
 import shlex
 import glob
@@ -395,8 +395,8 @@ def recursive_copy(src_files, src_root, dest_root, copy_function=None,
         if not overwrite and os.path.exists(f):
             raise OSError('{} exists.'.format(f))
         os.makedirs(os.path.normpath(os.path.dirname(f)), exist_ok=True)
-    for src, dest in zip(src_files, dest_files):
-        copy_function(src, dest)
+    for mdtf, dest in zip(src_files, dest_files):
+        copy_function(mdtf, dest)
 
 def resolve_path(path, root_path="", env=None):
     """Abbreviation to resolve relative paths.
