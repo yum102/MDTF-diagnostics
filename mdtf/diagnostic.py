@@ -85,7 +85,7 @@ class Diagnostic(object):
                 yield alt_var
 
     def _parse_pod_settings(self, settings, verbose=0):
-        """Private method called by :meth:`~shared_diagnostic.Diagnostic.__init__`.
+        """Private method called by :meth:`~diagnostic.Diagnostic.__init__`.
 
         Args:
             settings (:py:obj:`dict`): Contents of the settings portion of the POD's
@@ -123,7 +123,7 @@ class Diagnostic(object):
         return d
 
     def _parse_pod_varlist(self, varlist, verbose=0):
-        """Private method called by :meth:`~shared_diagnostic.Diagnostic.__init__`.
+        """Private method called by :meth:`~diagnostic.Diagnostic.__init__`.
 
         Args:
             varlist (:py:obj:`list` of :py:obj:`dict`): Contents of the varlist portion 
@@ -169,10 +169,10 @@ class Diagnostic(object):
             multiple languages) so the validation must take place in that 
             subprocess.
 
-        Raises: :exc:`~shared_diagnostic.PodRequirementFailure` if requirements
+        Raises: :exc:`~diagnostic.PodRequirementFailure` if requirements
             aren't met. This is re-raised from the 
-            :meth:`~shared_diagnostic.Diagnostic._check_pod_driver` and
-            :meth:`~shared_diagnostic.Diagnostic._check_for_varlist_files` 
+            :meth:`~diagnostic.Diagnostic._check_pod_driver` and
+            :meth:`~diagnostic.Diagnostic._check_for_varlist_files` 
             subroutines.
         """
         self._set_pod_env_vars(verbose)
@@ -203,7 +203,7 @@ class Diagnostic(object):
             raise exc
 
     def _set_pod_env_vars(self, verbose=0):
-        """Private method called by :meth:`~shared_diagnostic.Diagnostic.setUp`.
+        """Private method called by :meth:`~diagnostic.Diagnostic.setUp`.
         Sets all environment variables for POD.
 
         Args:
@@ -255,7 +255,7 @@ class Diagnostic(object):
             util_mdtf.setenv(key, val, self.pod_env_vars, verbose=verbose)
 
     def _setup_pod_directories(self, verbose =0):
-        """Private method called by :meth:`~shared_diagnostic.Diagnostic.setUp`.
+        """Private method called by :meth:`~diagnostic.Diagnostic.setUp`.
 
         Args:
             verbose (:py:obj:`int`, optional): Logging verbosity level. Default 0.
@@ -271,12 +271,12 @@ class Diagnostic(object):
                 os.makedirs(os.path.join(self.POD_WK_DIR, d))
 
     def _check_pod_driver(self, verbose=0):
-        """Private method called by :meth:`~shared_diagnostic.Diagnostic.setUp`.
+        """Private method called by :meth:`~diagnostic.Diagnostic.setUp`.
 
         Args:
             verbose (:py:obj:`int`, optional): Logging verbosity level. Default 0.
 
-        Raises: :exc:`~shared_diagnostic.PodRequirementFailure` if driver script
+        Raises: :exc:`~diagnostic.PodRequirementFailure` if driver script
             can't be found.
         """
         func_name = "check_pod_driver "

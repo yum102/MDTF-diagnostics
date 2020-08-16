@@ -20,7 +20,7 @@ from src import util
 from src import util_mdtf
 from src import datelabel
 from src import netcdf_helper
-from src.shared_diagnostic import PodRequirementFailure
+from src.diagnostic import PodRequirementFailure
 
 
 @six.python_2_unicode_compatible

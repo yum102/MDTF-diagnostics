@@ -22,7 +22,7 @@ import src.conflict_resolution as choose
 from src import cmip6
 from src.data_manager import DataSet, DataManager, DataAccessError
 from src.environment_manager import VirtualenvEnvironmentManager, CondaEnvironmentManager
-from src.shared_diagnostic import Diagnostic, PodRequirementFailure
+from src.diagnostic import Diagnostic, PodRequirementFailure
 from src.netcdf_helper import NcoNetcdfHelper # only option currently implemented
 
 class ModuleManager(util.Singleton):
