@@ -1,27 +1,6 @@
-#!/usr/bin/env python
-
-# ======================================================================
-# NOAA Model Diagnotics Task Force (MDTF) Diagnostic Driver
-#
-# March 2019
-# Dani Coleman, NCAR
-# Chih-Chieh (Jack) Chen, NCAR, 
-# Yi-Hung Kuo, UCLA
-#
-# The MDTF code package and the participating PODs are distributed under
-# the LGPLv3 license (see LICENSE.txt).
-# ======================================================================
-
 from __future__ import absolute_import, division, print_function, unicode_literals
-import sys
-# do version check before importing other stuff
-if sys.version_info[0] == 2 and sys.version_info[1] < 7:
-    print(("ERROR: MDTF currently only supports python >= 2.7. Please check "
-    "which version is on your $PATH (e.g. with `which python`.)"))
-    print("Attempted to run with following python version:\n{}".format(sys.version))
-    exit()
-# passed; continue with imports
 import os
+import sys
 import signal
 import shutil
 import logging
@@ -276,6 +255,7 @@ class MDTFFramework(object):
         self.NetCDFHelper = _dispatch('netcdf_helper', 'NetcdfHelper')
 
     def main_loop(self):
+        _log.info("Starting MDTF run")
         config = util_mdtf.ConfigManager()
         self.manual_dispatch(config)
         caselist = []
@@ -307,21 +287,5 @@ class MDTFFramework(object):
         for case in caselist:
             case.tearDown()
         self.cleanup_tempdirs()
-
-
-# should move this out of 'framework' package, but need to create wrapper shell script
-# to set framework conda env.
-if __name__ == '__main__':
-    # get dir of currently executing script: 
-    cwd = os.path.dirname(os.path.realpath(__file__)) 
-    code_root, src_dir = os.path.split(cwd)
-    defaults_rel_path = os.path.join(src_dir, 'cli.jsonc')
-    if not os.path.exists(defaults_rel_path):
-        # print('Warning: site-specific cli.jsonc not found, using template.')
-        defaults_rel_path = os.path.join(src_dir, 'cli_template.jsonc')
-    mdtf = MDTFFramework(code_root, defaults_rel_path)
-    _log.info("Starting %s", __file__)
-    mdtf.main_loop()
-    _log.info("Exiting normally from %s", __file__)
-    config = util_mdtf.ConfigManager()
-    _log.info("Output written to %s", config.paths.OUTPUT_DIR)
+        _log.info("Exiting normally from MDTF run")
+        _log.info("Output written to %s", config.paths.OUTPUT_DIR)
