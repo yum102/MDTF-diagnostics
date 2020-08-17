@@ -285,7 +285,7 @@ class CondaEnvironmentManager(EnvironmentManager):
 
         config = util_mdtf.ConfigManager()
         self.code_root = config.paths.CODE_ROOT
-        self.conda_dir = os.path.join(self.code_root, 'mdtf','conda')
+        self.conda_dir = os.path.join(self.code_root, 'framework','conda')
         self.env_list = []
         for file_ in os.listdir(self.conda_dir):
             if file_.endswith('.yml'):

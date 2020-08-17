@@ -14,7 +14,7 @@ class CMIP6_CVs(util.Singleton):
             file_ = 'dummy_filename'
         else:
             config = util_mdtf.ConfigManager()
-            file_ = os.path.join(config.paths.CODE_ROOT, 'mdtf', 
+            file_ = os.path.join(config.paths.CODE_ROOT, 'framework', 
                 'cmip6-cmor-tables','Tables','CMIP6_CV.json')
         self._contents = util.read_json(file_)
         self._contents = self._contents['CV']

@@ -414,7 +414,7 @@ class Diagnostic(object):
                 the POD's runtime environment.
         """
         # pylint: disable=maybe-no-member
-        command_path = os.path.join(self.code_root, 'mdtf', 'validate_environment.sh')
+        command_path = os.path.join(self.code_root, 'framework', 'validate_environment.sh')
         command = [
             command_path,
             ' -v',
@@ -492,7 +492,7 @@ class Diagnostic(object):
                 raised during POD's attempted execution. If this is None, assume
                 that POD ran successfully.
         """
-        src_dir = os.path.join(self.code_root, 'mdtf', 'html')
+        src_dir = os.path.join(self.code_root, 'framework', 'html')
         template_dict = self.__dict__.copy()
         if error is None:
             # normal exit
@@ -521,7 +521,7 @@ class Diagnostic(object):
             template_dict = self.__dict__.copy()
             template_dict['missing_output'] = '<br>'.join(missing_out)
             util_mdtf.append_html_template(
-                os.path.join(self.code_root,'mdtf','html','pod_missing_snippet.html'),
+                os.path.join(self.code_root,'framework','html','pod_missing_snippet.html'),
                 self.TEMP_HTML, template_dict
             )
 

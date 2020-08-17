@@ -18,7 +18,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from framework import datelabel
 from framework import util
 from framework import util_mdtf
-import mdtf.conflict_resolution as choose
+import framework.conflict_resolution as choose
 from framework import cmip6
 from framework.data_manager import DataSet, DataManager, DataAccessError
 from framework.environment_manager import VirtualenvEnvironmentManager, CondaEnvironmentManager

@@ -464,7 +464,7 @@ class DataManager(six.with_metaclass(ABCMeta)):
         self._copy_to_output()
 
     def _make_html(self, cleanup=True):
-        src_dir = os.path.join(self.code_root, 'mdtf', 'html')
+        src_dir = os.path.join(self.code_root, 'framework', 'html')
         dest = os.path.join(self.MODEL_WK_DIR, 'index.html')
         if os.path.isfile(dest):
             print("WARNING: index.html exists, deleting.")

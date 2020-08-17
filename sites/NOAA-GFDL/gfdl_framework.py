@@ -19,7 +19,7 @@ from framework import data_manager
 from framework import environment_manager
 from framework import diagnostic
 from framework import netcdf_helper
-from . import gfdl
+from .. import gfdl
 
 class GFDLMDTFFramework(mdtf.MDTFFramework):
     # add gfdl to search path for DataMgr, EnvMgr

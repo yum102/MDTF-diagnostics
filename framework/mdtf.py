@@ -116,7 +116,7 @@ class MDTFFramework(object):
     def parse_env_vars(self, cli_obj, config):
         # don't think PODs use global env vars?
         # self.envvars = self._populate_from_cli(cli_obj, 'PATHS', self.envvars)
-        config.global_envvars['RGB'] = os.path.join(self.code_root,'mdtf','rgb')
+        config.global_envvars['RGB'] = os.path.join(self.code_root,'shared','rgb')
         # globally enforce non-interactive matplotlib backend
         # see https://matplotlib.org/3.2.2/tutorials/introductory/usage.html#what-is-a-backend
         config.global_envvars['MPLBACKEND'] = "Agg"
@@ -306,7 +306,7 @@ class MDTFFramework(object):
         self.cleanup_tempdirs()
 
 
-# should move this out of "mdtf" package, but need to create wrapper shell script
+# should move this out of 'framework' package, but need to create wrapper shell script
 # to set framework conda env.
 if __name__ == '__main__':
     # get dir of currently executing script: 
