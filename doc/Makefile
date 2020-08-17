@@ -25,7 +25,7 @@ clean_all:
 	-rm -rf $(BUILDDIR)
 	-rm -rf sphinx_pods
 	-rm -rf sphinx_sites
-	-rm sphinx/mdtf.*
+	-rm sphinx/framework.*
 
 html:
 	$(SPHINXBUILD) -v -T -E -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html

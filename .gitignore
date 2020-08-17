@@ -44,7 +44,7 @@ doc/sphinx/pod_toc.rst
 doc/sphinx_pods
 doc/sphinx/site_toc.rst
 doc/sphinx_sites
-doc/sphinx/mdtf.*
+doc/sphinx/framework.*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
