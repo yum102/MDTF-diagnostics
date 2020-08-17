@@ -12,13 +12,13 @@ if sys.version_info[0] == 2 and sys.version_info[1] < 7:
 import os
 import shutil
 import tempfile
-from mdtf import util
-from mdtf import util_mdtf
-from mdtf import mdtf
-from mdtf import data_manager
-from mdtf import environment_manager
-from mdtf import diagnostic
-from mdtf import netcdf_helper
+from framework import util
+from framework import util_mdtf
+from framework import mdtf
+from framework import data_manager
+from framework import environment_manager
+from framework import diagnostic
+from framework import netcdf_helper
 from . import gfdl
 
 class GFDLMDTFFramework(mdtf.MDTFFramework):

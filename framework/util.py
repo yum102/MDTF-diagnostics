@@ -4,7 +4,7 @@ Specifically, util.py implements general functionality that's not MDTF-specific.
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 import io
-from mdtf import six
+from framework import six
 import re
 import shlex
 import glob

@@ -7,8 +7,8 @@ if os.name == 'posix' and sys.version_info[0] < 3:
         import subprocess
     else:
         import subprocess
-from mdtf.util import read_json, NameSpace, coerce_to_iter
-from mdtf import util_mdtf
+from framework.util import read_json, NameSpace, coerce_to_iter
+from framework import util_mdtf
 import collections
 
 def setUp_ConfigManager(config=None, paths=None, pods=None, unittest=True):

@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 import io
-from mdtf import six
+from framework import six
 import re
 import shutil
 if os.name == 'posix' and six.PY2:
@@ -15,15 +15,15 @@ from collections import defaultdict, namedtuple
 from itertools import chain
 from operator import attrgetter, itemgetter
 from abc import ABCMeta, abstractmethod, abstractproperty
-from mdtf import datelabel
-from mdtf import util
-from mdtf import util_mdtf
+from framework import datelabel
+from framework import util
+from framework import util_mdtf
 import mdtf.conflict_resolution as choose
-from mdtf import cmip6
-from mdtf.data_manager import DataSet, DataManager, DataAccessError
-from mdtf.environment_manager import VirtualenvEnvironmentManager, CondaEnvironmentManager
-from mdtf.diagnostic import Diagnostic, PodRequirementFailure
-from mdtf.netcdf_helper import NcoNetcdfHelper # only option currently implemented
+from framework import cmip6
+from framework.data_manager import DataSet, DataManager, DataAccessError
+from framework.environment_manager import VirtualenvEnvironmentManager, CondaEnvironmentManager
+from framework.diagnostic import Diagnostic, PodRequirementFailure
+from framework.netcdf_helper import NcoNetcdfHelper # only option currently implemented
 
 class ModuleManager(util.Singleton):
     _current_module_versions = {

@@ -3,9 +3,9 @@ import sys
 import unittest
 import mock # define mock os.environ so we don't mess up real env vars
 import mdtf.util_mdtf as util_mdtf
-from mdtf.data_manager import DataSet, DataManager
-from mdtf.datelabel import DateFrequency
-from mdtf.diagnostic import Diagnostic, PodRequirementFailure
+from framework.data_manager import DataSet, DataManager
+from framework.datelabel import DateFrequency
+from framework.diagnostic import Diagnostic, PodRequirementFailure
 from tests.shared_test_utils import setUp_ConfigManager, tearDown_ConfigManager
 
 class TestDiagnosticInit(unittest.TestCase):

@@ -8,7 +8,7 @@ import glob
 import shutil
 import string
 import tempfile
-from mdtf import util
+from framework import util
 
 
 class ConfigManager(util.Singleton):

@@ -3,7 +3,7 @@ import sys
 import unittest
 import mock # define mock os.environ so we don't mess up real env vars
 import mdtf.util as util
-from mdtf.environment_manager import EnvironmentManager
+from framework.environment_manager import EnvironmentManager
 
 class TestEnvironmentManager(unittest.TestCase):
     test_config = {'case_list':[{}], 'pod_list':['X']}

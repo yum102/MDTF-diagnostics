@@ -1,11 +1,11 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os
-from mdtf import six
+from framework import six
 import glob
 import shutil
-from mdtf import util
-from mdtf import util_mdtf
-from mdtf import verify_links
+from framework import util
+from framework import util_mdtf
+from framework import verify_links
 
 
 @six.python_2_unicode_compatible
@@ -406,7 +406,7 @@ class Diagnostic(object):
 
         Called by :meth:`environment_manager.EnvironmentManager.run`. 
         Dependencies are passed as arguments to the shell script 
-        ``mdtf/validate_environment.sh``, which is invoked in the POD's subprocess
+        ``framework/validate_environment.sh``, which is invoked in the POD's subprocess
         before the POD is run.
 
         Returns:
@@ -510,7 +510,7 @@ class Diagnostic(object):
         calls LinkVerifier to check existence of all files linked to from the 
         POD's own top-level html page (after templating). If any files are
         missing, an error message listing them is written to the run's index.html 
-        (located in mdtf/html/pod_missing_snippet.html).
+        (located in framework/html/pod_missing_snippet.html).
         """
         verifier = verify_links.LinkVerifier(
             self.POD_HTML, os.path.dirname(self.POD_WK_DIR), verbose=False

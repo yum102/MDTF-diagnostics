@@ -4,8 +4,8 @@ from collections import namedtuple
 import itertools
 import mock # define mock os.environ so we don't mess up real env vars
 import mdtf.util_mdtf as util_mdtf
-from mdtf.data_manager import DataManager
-from mdtf.diagnostic import Diagnostic
+from framework.data_manager import DataManager
+from framework.diagnostic import Diagnostic
 from subprocess import CalledProcessError
 from tests.shared_test_utils import setUp_ConfigManager, tearDown_ConfigManager
 

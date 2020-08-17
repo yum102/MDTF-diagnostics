@@ -22,7 +22,7 @@ from html.parser import HTMLParser
 import urllib.parse
 import urllib.request
 import urllib.error
-from mdtf import util
+from framework import util
 
 Link = collections.namedtuple('Link', ['origin', 'target'])
 Link.__doc__ = """

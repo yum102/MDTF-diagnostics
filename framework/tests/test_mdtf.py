@@ -1,7 +1,7 @@
 import os
 import unittest
 import mock # define mock os.environ so we don't mess up real env vars
-from mdtf.mdtf import MDTFFramework
+from framework.mdtf import MDTFFramework
 import mdtf.util_mdtf as util
 
 @unittest.skip("")
@@ -53,7 +53,7 @@ class TestMDTFArgParsing(unittest.TestCase):
         mdtf = MDTFFramework.__new__(MDTFFramework)
         mdtf.config = self.config_test.copy()
         mdtf.set_mdtf_env_vars()
-        self.assertEqual(mdtf.config['envvars']['RGB'], 'TEST_CODE_ROOT/mdtf/rgb')
+        self.assertEqual(mdtf.config['envvars']['RGB'], 'TEST_CODE_ROOT/shared/rgb')
 
 # ---------------------------------------------------
 
