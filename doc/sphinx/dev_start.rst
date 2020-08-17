@@ -28,20 +28,20 @@ We recommend that new PODs be written in Python 3. We provide a developer versio
 ::
 
 % cd $CODE_ROOT
-% ./src/conda/conda_env_setup.sh --all-dev --conda_root $CONDA_ROOT --env_dir $CONDA_ENV_DIR
+% ./framework/conda/conda_env_setup.sh --all-dev --conda_root $CONDA_ROOT --env_dir $CONDA_ENV_DIR
 
 
 POD development using existing Conda environments
 -------------------------------------------------
 
-To prevent the proliferation of dependencies, we suggest that new POD development use existing Conda environments whenever possible, e.g., `python3_base <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/src/conda/env_python3_base.yml>`__, `NCL_base <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/src/conda/env_NCL_base.yml>`__, and `R_base <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/src/conda/env_R_base.yml>`__ for Python, NCL, and R, respectively.
+To prevent the proliferation of dependencies, we suggest that new POD development use existing Conda environments whenever possible, e.g., `python3_base <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/framework/conda/env_python3_base.yml>`__, `NCL_base <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/framework/conda/env_NCL_base.yml>`__, and `R_base <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/framework/conda/env_R_base.yml>`__ for Python, NCL, and R, respectively.
 
 In case you need any exotic third-party libraries, e.g., a storm tracker, consult with the lead team and create your own Conda environment following :ref:`instructions <ref-create-conda-env>` below.
 
 Python
 ^^^^^^
 
-The framework provides the `_MDTF_python3_base <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/src/conda/env_pythone3_base.yml>`__ Conda environment (recall the ``_MDTF`` prefix for framework-specific environment) as the generic Python environment, which you can install following the :ref:`instructions <ref-install>`. You can then activate this environment by running in a terminal:
+The framework provides the `_MDTF_python3_base <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/framework/conda/env_pythone3_base.yml>`__ Conda environment (recall the ``_MDTF`` prefix for framework-specific environment) as the generic Python environment, which you can install following the :ref:`instructions <ref-install>`. You can then activate this environment by running in a terminal:
 
 ::
 
@@ -52,7 +52,7 @@ where ``$CONDA_ENV_DIR`` is the path you used to install the Conda environments.
 Other languages
 ^^^^^^^^^^^^^^^
 
-The framework also provides the `_MDTF_NCL_base <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/src/conda/env_NCL_base.yml>`__ and `_MDTF_R_base <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/src/conda/env_R_base.yml>`__ Conda environments as the generic NCL and R environments.
+The framework also provides the `_MDTF_NCL_base <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/framework/conda/env_NCL_base.yml>`__ and `_MDTF_R_base <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/framework/conda/env_R_base.yml>`__ Conda environments as the generic NCL and R environments.
 
 .. _ref-create-conda-env:
 
@@ -61,7 +61,7 @@ POD development using a new Conda environment
 
 If your POD requires languages that aren't available in an existing environment or third-party libraries unavailable through the common `conda-forge <https://conda-forge.org/feedstocks/>`__ and `anaconda <https://docs.anaconda.com/anaconda/packages/pkg-docs/>`__ channels, we ask that you notify us (since this situation may be relevant to other developers) and submit a `YAML (.yml) file <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-file-manually>`__ that creates the environment needed for your POD.
 
-- The new YAML file should be added to ``src/conda/``, where you can find templates for existing environments from which you can create your own.
+- The new YAML file should be added to ``framework/conda/``, where you can find templates for existing environments from which you can create your own.
 
 - The YAML filename should be ``env_$your_POD_short_name.yml``.
 
@@ -78,11 +78,11 @@ Framework interaction with conda environments
 
 As  described in :ref:`ref-execute`, when you run the ``mdtf`` executable, among other things, it reads ``pod_list`` in ``default_tests.jsonc`` and executes POD codes accordingly. For a POD included in the list (referred to as $POD_NAME):
 
-1. The framework will first try to look for the YAML file ``src/conda/env_$POD_NAME.yml``. If it exists, the framework will assume that the corresponding conda environment ``_MDTF_$POD_NAME`` has been installed under ``$CONDA_ENV_DIR``, and will switch to this environment and run the POD.
+1. The framework will first try to look for the YAML file ``framework/conda/env_$POD_NAME.yml``. If it exists, the framework will assume that the corresponding conda environment ``_MDTF_$POD_NAME`` has been installed under ``$CONDA_ENV_DIR``, and will switch to this environment and run the POD.
 
 2. If not, the framework will then look into the POD's ``settings.jsonc`` file in ``$CODE_ROOT/diagnostics/$POD_NAME/``. The ``runtime_requirements`` section in ``settings.jsonc`` specifies the programming language(s) adopted by the POD:
 
-    a). If purely Python 3, the framework will look for ``src/conda/env_python3_base.yml`` and check its content to determine whether the POD's requirements are met, and then switch to ``_MDTF_python3_base`` and run the POD.
+    a). If purely Python 3, the framework will look for ``framework/conda/env_python3_base.yml`` and check its content to determine whether the POD's requirements are met, and then switch to ``_MDTF_python3_base`` and run the POD.
 
     b). Similarly, if NCL or R is used, then ``NCL_base`` or ``R_base``.
 
@@ -107,11 +107,11 @@ Recall how the framework finds a proper Conda environment for a POD. First, it s
    ::
 
    % cd $CODE_ROOT
-   % ./src/conda/conda_env_setup.sh --env $your_POD_short_name --conda_root $CONDA_ROOT --env_dir $CONDA_ENV_DIR
+   % ./framework/conda/conda_env_setup.sh --env $your_POD_short_name --conda_root $CONDA_ROOT --env_dir $CONDA_ENV_DIR
 
 - Have the framework run your POD on suitable test data.
 
-   1. Add your POD's short name to the ``pod_list`` section of the configuration input file (template: ``src/default_tests.jsonc``).
+   1. Add your POD's short name to the ``pod_list`` section of the configuration input file (template: ``framework/default_tests.jsonc``).
 
    2. Prepare the test data as described in :doc:`start_config`.
 

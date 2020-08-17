@@ -11,5 +11,5 @@ Documentation for the MDTF diagnostics framework
    sphinx/dev_toc
    sphinx/pod_toc
    sphinx/ref_toc
-   sphinx/src_autodoc
+   sphinx/mdtf_autodoc
    sphinx/tex_acknowledgements

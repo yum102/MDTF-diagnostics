@@ -17,7 +17,6 @@ import sys
 cwd = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.abspath(cwd))
 sys.path.insert(0, os.path.abspath(os.path.join(cwd, '..')))
-sys.path.insert(0, os.path.abspath(os.path.join(cwd, '..', 'src')))
 
 # AutoStructify needed for getting full Sphinx features from markdown (.md) files
 # https://recommonmark.readthedocs.io/en/latest/auto_structify.html
@@ -58,7 +57,7 @@ _project_github_url = 'https://github.com/NOAA-GFDL/MDTF-diagnostics/tree/develo
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'copy_pod_docs',
+    'copy_outside_docs',
     'sphinx.ext.autosummary',
     'sphinx.ext.autodoc',
     'sphinx.ext.todo',
@@ -307,7 +306,7 @@ autodoc_default_options = {
     'undoc-members': True,
     'show-inheritance': True
 }
-# For simplicty, the six.py library is included directly in the /src module, 
+# For simplicty, the six.py library is included directly in the /mdtf module, 
 # but we don't want to document it.
 # https://stackoverflow.com/a/21449475
 def autodoc_skip_member(app, what, name, obj, skip, options):
@@ -317,7 +316,7 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
 # source: https://github.com/readthedocs/readthedocs.org/issues/1139#issuecomment-398083449
 def run_apidoc(_):
     ignore_paths = []
-    argv = ["--force", "--no-toc", "--separate", "-o", "./sphinx", "../src"
+    argv = ["--force", "--no-toc", "--separate", "-o", "./sphinx", "../framework"
         ] + ignore_paths
 
     try:

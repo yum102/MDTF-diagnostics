@@ -1,4 +1,4 @@
-# This file is part of the MJO_teleconnection module of the MDTF code package (see mdtf/MDTF_v2.0/LICENSE.txt)
+# This file is part of the MJO_teleconnection module of the MDTF code package (see LICENSE.txt)
 
 # ==============================================================================================
 # mjo_teleconnection.py
@@ -49,7 +49,7 @@
 #     
 #     Please change the variable names and conversion factor according to your data before running
 #     MJO teleconnection diagnostic at :
-#     src/config_<model name>.json
+#     mdtf/config_<model name>.json
 #     Please provide each input variable into a single file
 #
 #   -------------------------------------------------------------------------------------------------------

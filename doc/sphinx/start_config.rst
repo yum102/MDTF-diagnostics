@@ -3,7 +3,7 @@ Framework configuration for user model data
 
 In this section we describe how to run the framework with your own model data, and more configuration options than the test case described in :doc:`start_install`.
 
-The complete set of configuration options is described in :doc:`ref_cli`, or by running ``% ./mdtf --help``. All options can be specified as a command-line flag (e.g., ``--OUTPUT_DIR``) or as a JSON configuration input file of the form provided in `src/default_tests.jsonc <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/src/default_tests.jsonc>`__. We recommend using this file as a template, making copies and customizing it as needed.
+The complete set of configuration options is described in :doc:`ref_cli`, or by running ``% ./mdtf --help``. All options can be specified as a command-line flag (e.g., ``--OUTPUT_DIR``) or as a JSON configuration input file of the form provided in `framework/default_tests.jsonc <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/framework/default_tests.jsonc>`__. We recommend using this file as a template, making copies and customizing it as needed.
 
 Options given on the command line always take precedence over the input file. This is so you can store options that don't frequently change in the file (e.g., the input/output data paths) and use command-line flags to set only those options you want to change from run to run (e.g., the analysis period start and end years). In all cases, the complete set of option values used in each run of the framework will be included in the log file as part of the output, for reproducibility and provenance.
 
@@ -85,12 +85,12 @@ The framework requires specifying a convention for variable names used in the mo
 
 We hope to offer support for the variable naming conventions of a wider range of models in the future. For the time being, please process output of models not on this list with `CMOR <https://cmor.llnl.gov/>`__ to make them CF-compliant.
 
-Alternatively, the framework will load any lookup tables of the form ``src/fieldlist_$convention.jsonc`` and use them for variable name conversion. Users can add new files in this format to specify new conventions. For example, in ``src/fieldlist_CESM.jsonc`` the line ``"pr_var" : "PRECT"`` means that the CESM name for the precipitation rate is PRECT (case sensitive). In addition, ``"pr_conversion_factor" : 1000`` specifies the conversion factor to CF standard units for this variable.
+Alternatively, the framework will load any lookup tables of the form ``framework/fieldlist_$convention.jsonc`` and use them for variable name conversion. Users can add new files in this format to specify new conventions. For example, in ``framework/fieldlist_CESM.jsonc`` the line ``"pr_var" : "PRECT"`` means that the CESM name for the precipitation rate is PRECT (case sensitive). In addition, ``"pr_conversion_factor" : 1000`` specifies the conversion factor to CF standard units for this variable.
 
 Running the code on your data
 -----------------------------
 
-After adding your model data to the directory hierarchy as described above, you can run the framework on that data using the following options. These can either be set in the ``caselist`` section of the configuration input file (see `src/default_tests.jsonc <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/src/default_tests.jsonc>`__ for an example/template), or individually as command-line flags (e.g., ``--CASENAME my_new_experiment``). Required settings are:
+After adding your model data to the directory hierarchy as described above, you can run the framework on that data using the following options. These can either be set in the ``caselist`` section of the configuration input file (see `framework/default_tests.jsonc <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/framework/default_tests.jsonc>`__ for an example/template), or individually as command-line flags (e.g., ``--CASENAME my_new_experiment``). Required settings are:
 
 - ``CASENAME`` should be the same string used to label your model run.
 - ``convention`` describes the variable naming convention your model uses, determined in the previous section.

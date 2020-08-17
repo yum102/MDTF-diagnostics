@@ -23,7 +23,7 @@
   //
   // USAGE varlist
   // var_name time-frequency [requirement]
-  // - var_name: as found in src/fieldlist_*.json
+  // - var_name: as found in framework/fieldlist_*.json
   // - freq: mon (monthly), day, 6hr, 3hr, 1hr
   // - requirement = blank  (default = optional),
   //                 required (package cannot run without this)
