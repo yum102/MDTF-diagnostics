@@ -1,3 +1,3 @@
-[submodule "mdtf/cmip6-cmor-tables"]
-	path = mdtf/cmip6-cmor-tables
+[submodule "framework/cmip6-cmor-tables"]
+	path = framework/cmip6-cmor-tables
 	url = https://github.com/tsjackson-noaa/cmip6-cmor-tables.git
