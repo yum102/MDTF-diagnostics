@@ -24,32 +24,6 @@ class MDTFFramework(object):
         signal.signal(signal.SIGTERM, self.cleanup_tempdirs)
         signal.signal(signal.SIGINT, self.cleanup_tempdirs)
 
-        # poor man's subparser: argparse's subparser doesn't handle this
-        # use case easily, so just dispatch on first argument
-        if len(sys.argv) == 1 or \
-            len(sys.argv) == 2 and sys.argv[1].lower().endswith('help'):
-            # build CLI, print its help and exit
-            cli_obj = cli.FrameworkCLIHandler(code_root, defaults_rel_path)
-            cli_obj.parser.print_help()
-            exit()
-        elif sys.argv[1].lower() == 'info': 
-            # "subparser" for command-line info
-            cli.InfoCLIHandler(self.code_root, sys.argv[2:])
-        else:
-            # not printing help or info, setup CLI normally 
-            # move into its own function so that child classes can customize
-            # above options without having to rewrite below
-            self._framework_init(code_root, defaults_rel_path)
-
-    def cleanup_tempdirs(self, signum=None, frame=None):
-        # delete temp files
-        util.signal_logger(self.__class__.__name__, signum, frame)
-        config = util_mdtf.ConfigManager()
-        tmpdirs = util_mdtf.TempDirManager()
-        if not config.config.get('keep_temp', False):
-            tmpdirs.cleanup()
-
-    def _framework_init(self, code_root, defaults_rel_path):
         # set up CLI and parse arguments
         # print('\tDEBUG: argv = {}'.format(sys.argv[1:]))
         cli_obj = cli.FrameworkCLIHandler(code_root, defaults_rel_path)
@@ -65,6 +39,14 @@ class MDTFFramework(object):
         # config should be read-only from here on
         self._post_parse_hook(cli_obj, config)
         self._print_config(cli_obj, config)
+
+    def cleanup_tempdirs(self, signum=None, frame=None):
+        # delete temp files
+        util.signal_logger(self.__class__.__name__, signum, frame)
+        config = util_mdtf.ConfigManager()
+        tmpdirs = util_mdtf.TempDirManager()
+        if not config.config.get('keep_temp', False):
+            tmpdirs.cleanup()
 
     def _cli_pre_parse_hook(self, cli_obj):
         # gives subclasses the ability to customize CLI handler before parsing
