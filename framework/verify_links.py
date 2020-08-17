@@ -18,11 +18,14 @@ import os
 import argparse
 import collections
 import itertools
+import logging
 from html.parser import HTMLParser
 import urllib.parse
 import urllib.request
 import urllib.error
 from framework import util
+
+_log = logging.getLogger(__name__)
 
 Link = collections.namedtuple('Link', ['origin', 'target'])
 Link.__doc__ = """
@@ -134,11 +137,10 @@ class LinkVerifier(object):
         try:
             f = urllib.request.urlopen(url)
         except urllib.error.HTTPError as e:
-            print('Error code: ', e.code)
+            _log.error('URL error for %s, code: %s', url, e.code)
             return None
         except urllib.error.URLError as e:
-            print('\nFailed to find file or connect to server.')
-            print('Reason: ', e.reason)
+            _log.error('Failed to find %s, reason: %s', url, e.reason)
             return None
         if f.info().get_content_subtype() != 'html':
             return []
@@ -175,21 +177,20 @@ class LinkVerifier(object):
 
         queue = [Link(origin=None, target=root_url)]
         if self.verbose:
-            print("Checking {}:".format(root_url))
+            _log.debug("Checking %s:", root_url)
         while queue:
             current_link = queue.pop(0)
-            if self.verbose:
-                print("\tChecking {}".format(
-                    current_link.target[len(root_parent) + 1:]
-                ), end="")
+            log_str = "\tChecking {}".format(
+                current_link.target[len(root_parent) + 1:]
+            )
             new_links = self.check_one_url(current_link)
             if new_links is None:
                 if self.verbose:
-                    print('...MISSING!')
+                    _log.debug(log_str + '...MISSING!')
                 missing.append(current_link)
             else:
                 if self.verbose:
-                    print('...OK')
+                    _log.debug( log_str + '...OK')
                 # restrict links to those that start with root_parent
                 new_links = [
                     lnk for lnk in new_links if lnk.target not in known_urls \

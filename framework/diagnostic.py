@@ -2,11 +2,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 from framework import six
 import glob
+import logging
 import shutil
 from framework import util
 from framework import util_mdtf
 from framework import verify_links
 
+_log = logging.getLogger(__name__)
 
 @six.python_2_unicode_compatible
 class PodRequirementFailure(Exception):
@@ -46,14 +48,13 @@ class Diagnostic(object):
             $PATH before the POD is run.
     """
 
-    def __init__(self, pod_name, verbose=0):
+    def __init__(self, pod_name):
         """POD initializer. Given a POD name, we attempt to read a settings.json 
         file in a subdirectory of ``/diagnostics`` by that name and parse the
         contents.
 
         Args:
             pod_name (:py:obj:`str`): Name of the POD to initialize.
-            verbose (:py:obj:`int`, optional): Logging verbosity level. Default 0.
         """
         config = util_mdtf.ConfigManager()
         assert pod_name in config.pods
@@ -84,13 +85,12 @@ class Diagnostic(object):
             for alt_var in var.alternates:
                 yield alt_var
 
-    def _parse_pod_settings(self, settings, verbose=0):
+    def _parse_pod_settings(self, settings):
         """Private method called by :meth:`~diagnostic.Diagnostic.__init__`.
 
         Args:
             settings (:py:obj:`dict`): Contents of the settings portion of the POD's
                 settings.json file.
-            verbose (:py:obj:`int`, optional): Logging verbosity level. Default 0.
 
         Returns:
             Dict of parsed settings.
@@ -117,18 +117,15 @@ class Diagnostic(object):
             d['convention'] = 'CF'
         for key, val in iter(d['runtime_requirements'].items()):
             d['runtime_requirements'][key] = util.coerce_to_iter(val)
-        if (verbose > 0): 
-            print(self.name + " settings: ")
-            print(d)
+        _log.debug("%s settings: %s", self.name, d)
         return d
 
-    def _parse_pod_varlist(self, varlist, verbose=0):
+    def _parse_pod_varlist(self, varlist):
         """Private method called by :meth:`~diagnostic.Diagnostic.__init__`.
 
         Args:
             varlist (:py:obj:`list` of :py:obj:`dict`): Contents of the varlist portion 
                 of the POD's settings.json file.
-            verbose (:py:obj:`int`, optional): Logging verbosity level. Default 0.
 
         Returns:
             varlist
@@ -146,14 +143,12 @@ class Diagnostic(object):
                 varlist[i]['alternates'] = []
             else:
                 varlist[i]['alternates'] = util.coerce_to_iter(var['alternates'])
-        if (verbose > 0): 
-            print(self.name + " varlist: ")
-            print(varlist)
+        _log.debug("%s varlist: %s", self.name, varlist)
         return varlist
 
     # -------------------------------------
 
-    def setUp(self, verbose=0):
+    def setUp(self):
         """Perform filesystem operations and checks prior to running the POD. 
 
         In order, this 1) sets environment variables specific to the POD, 2)
@@ -175,7 +170,7 @@ class Diagnostic(object):
             :meth:`~diagnostic.Diagnostic._check_for_varlist_files` 
             subroutines.
         """
-        self._set_pod_env_vars(verbose)
+        self._set_pod_env_vars()
         self._setup_pod_directories()
         if isinstance(self.skipped, Exception):
             # already encountered reason we can't run this, re-raise it here 
@@ -185,9 +180,9 @@ class Diagnostic(object):
                     type(self.skipped).__name__, self.skipped
                 ))
         try:
-            self._check_pod_driver(verbose)
+            self._check_pod_driver()
             (found_files, missing_files) = self._check_for_varlist_files(
-                self.varlist, verbose
+                self.varlist
             )
             self.found_files = found_files
             self.missing_files = missing_files
@@ -197,17 +192,14 @@ class Diagnostic(object):
                         "\n".join(missing_files)
                     ))
             else:
-                if (verbose > 0): print("No known missing required input files")
+                _log.debug("%s: No known missing required input files", self.name)
         except PodRequirementFailure as exc:
-            print(exc)
+            _log.warning(getattr(exc, 'msg', repr(exc)))
             raise exc
 
-    def _set_pod_env_vars(self, verbose=0):
+    def _set_pod_env_vars(self):
         """Private method called by :meth:`~diagnostic.Diagnostic.setUp`.
         Sets all environment variables for POD.
-
-        Args:
-            verbose (:py:obj:`int`, optional): Logging verbosity level. Default 0.
         """
         self.pod_env_vars.update({
             "POD_HOME": self.POD_CODE_DIR, # location of POD's code
@@ -217,19 +209,19 @@ class Diagnostic(object):
         # Set env vars POD has inherited globally and from current case 
         # (set in DataManager._setup_pod).
         for key, val in iter(self.pod_env_vars.items()):
-            util_mdtf.setenv(key, val, self.pod_env_vars, verbose=verbose, overwrite=True) 
+            util_mdtf.setenv(key, val, self.pod_env_vars, overwrite=True) 
 
         # Set env vars for variable and axis names:
         axes = dict()
         ax_status = dict()
         for var in self.iter_vars_and_alts():
-            # util_mdtf.setenv(var.original_name, var.name_in_model, 
-            #     self.pod_env_vars, verbose=verbose)
             # make sure axes found for different vars are consistent
             for ax_name, ax_attrs in iter(var.axes.items()):
                 if 'MDTF_envvar' not in ax_attrs:
-                    print(("\tWarning: don't know env var to set" 
-                        "for axis name {}").format(ax_name))
+                    _log.warning(
+                        "%s: don't know env var to set for axis name %s",
+                        self.name, ax_name
+                    )
                     envvar_name = ax_name+'_coord'
                 else:
                     envvar_name = ax_attrs['MDTF_envvar']
@@ -252,60 +244,51 @@ class Diagnostic(object):
                                 envvar_name, axes[envvar_name], ax_name
                     ))
         for key, val in iter(axes.items()): 
-            util_mdtf.setenv(key, val, self.pod_env_vars, verbose=verbose)
+            util_mdtf.setenv(key, val, self.pod_env_vars)
 
-    def _setup_pod_directories(self, verbose =0):
+    def _setup_pod_directories(self):
         """Private method called by :meth:`~diagnostic.Diagnostic.setUp`.
-
-        Args:
-            verbose (:py:obj:`int`, optional): Logging verbosity level. Default 0.
         """
         util_mdtf.check_required_dirs(
-            already_exist =[self.POD_CODE_DIR, self.POD_OBS_DATA], 
+            already_exist = [self.POD_CODE_DIR, self.POD_OBS_DATA], 
             create_if_nec = [self.POD_WK_DIR], 
-            verbose=verbose)
+        )
         dirs = ['', 'model', 'model/PS', 'model/netCDF', 
             'obs', 'obs/PS','obs/netCDF']
         for d in dirs:
             if not os.path.exists(os.path.join(self.POD_WK_DIR, d)):
                 os.makedirs(os.path.join(self.POD_WK_DIR, d))
 
-    def _check_pod_driver(self, verbose=0):
+    def _check_pod_driver(self):
         """Private method called by :meth:`~diagnostic.Diagnostic.setUp`.
-
-        Args:
-            verbose (:py:obj:`int`, optional): Logging verbosity level. Default 0.
 
         Raises: :exc:`~diagnostic.PodRequirementFailure` if driver script
             can't be found.
         """
-        func_name = "check_pod_driver "
-        if (verbose > 1): 
-            print(func_name," received POD settings: ", self.__dict__)
+        _log.debug("%s received POD settings: %s", self.name, self.__dict__)
         programs = util_mdtf.get_available_programs()
 
         if self.driver == '':  
-            print("WARNING: no valid driver entry found for ", self.name)
+            _log.warning("No valid driver entry found for %s", self.name)
             #try to find one anyway
             try_filenames = [self.name+".", "driver."]      
             file_combos = [ file_root + ext for file_root \
                 in try_filenames for ext in programs]
-            if verbose > 1: 
-                print("Checking for possible driver names in {} {}".format(
-                    self.POD_CODE_DIR, file_combos
-                ))
+            _log.debug(
+                "Checking for possible driver names in %s %s",
+                self.POD_CODE_DIR, file_combos
+            )
             for try_file in file_combos:
                 try_path = os.path.join(self.POD_CODE_DIR, try_file)
-                if verbose > 1: print(" looking for driver file "+try_path)
+                _log.debug("%s looking for driver file %s", self.name, try_path)
                 if os.path.exists(try_path):
                     self.driver = try_path
-                    if (verbose > 0): 
-                        print("Found driver script for {}: {}".format(
-                            self.name, self.driver
-                        ))
+                    _log.debug(
+                        "Found driver script for %s: %s", self.name, self.driver
+                    )
                     break    #go with the first one found
                 else:
-                    if (verbose > 1 ): print("\t "+try_path+" not found...")
+                    _log.debug("%s: %s not found...", self.name, try_path)
         if self.driver == '':
             raise PodRequirementFailure(self, 
                 """No driver script found in {}. Specify 'driver' in 
@@ -325,15 +308,13 @@ class Diagnostic(object):
             # Possible error: Driver file type unrecognized
             if driver_ext not in programs:
                 raise PodRequirementFailure(self, 
-                    ("{} doesn't know how to call a .{} file.\n"
-                    "Supported programs: {}").format(
-                        func_name, driver_ext, programs
-                ))
+                    ("Don't know how to call a .{} file.\n"
+                    "Supported programs: {}").format(driver_ext, programs)
+                )
             self.program = programs[driver_ext]
-            if ( verbose > 1): 
-                print(func_name +": Found program "+programs[driver_ext])
+            _log.debug("%s: Found program %s", self.name, programs[driver_ext])
 
-    def _check_for_varlist_files(self, varlist, verbose=0):
+    def _check_for_varlist_files(self, varlist):
         """Verify that all data files needed by a POD exist locally.
         
         Private method called by :meth:`~data_manager.DataManager.fetchData`.
@@ -341,42 +322,42 @@ class Diagnostic(object):
         Args:
             varlist (:py:obj:`list` of :py:obj:`dict`): Contents of the varlist portion 
                 of the POD's settings.json file.
-            verbose (:py:obj:`int`, optional): Logging verbosity level. Default 0.
 
         Returns: :py:obj:`tuple` of found and missing file lists. Note that this is called
             recursively.
         """
-        func_name = "\t \t check_for_varlist_files :"
-        if ( verbose > 2 ): 
-            print(func_name+" check_for_varlist_files called with ", varlist)
+        _log.debug("check_for_varlist_files called with %s", varlist)
         found_list = []
         missing_list = []
         if self.dry_run:
-            print('DRY_RUN: Skipping POD file check')
+            _log.warning('DRY_RUN: Skipping POD file check')
             return (found_list, missing_list)
         for ds in varlist:
-            if (verbose > 2 ): print(func_name +" "+ds.name)
+            _log.debug("check_for_varlist_files %s", ds.name)
             filepath = ds._local_data
             if os.path.isfile(filepath):
                 found_list.append(filepath)
                 continue
             if (not ds.required):
-                print("WARNING: optional file not found ", filepath)
+                _log.warning("%s: Optional file %s not found", self.name, filepath)
                 continue
             if not ds.alternates:
-                print(("ERROR: missing required file {}. "
-                    "No alternatives found").format(filepath))
+                _log.error(
+                    "%s missing required file %s. No alternatives found.",
+                    self.name, filepath
+                )
                 missing_list.append(filepath)
             else:
                 alt_list = ds.alternates
-                print(("WARNING: required file not found: {}."
-                    "\n\tLooking for alternatives: ").format(filepath))
+                _log.warning(
+                    "%s: required file not found: %s. Looking for alternatives.",
+                    self.name, filepath
+                )
                 for alt_var in alt_list: 
                     # maybe some way to do this w/o loop since check_ takes a list
-                    if (verbose > 1): 
-                        print("\t\t examining alternative ",alt_var)
+                    _log.debug("%s: examining alternative %s", self.name, alt_var)
                     (new_found, new_missing) = self._check_for_varlist_files(
-                        [alt_var], verbose=verbose
+                        [alt_var]
                     )
                     found_list.extend(new_found)
                     missing_list.extend(new_missing)
@@ -384,8 +365,7 @@ class Diagnostic(object):
         found_list = [x for x in found_list if x is not None]
         missing_list = [x for x in missing_list if x is not None]
         # nb, need to return due to recursive call
-        if (verbose > 2): 
-            print("check_for_varlist_files returning ", missing_list)
+        _log.debug("%s missing varlist files: %s", self.name, missing_list)
         return (found_list, missing_list)
 
     # -------------------------------------
@@ -428,7 +408,7 @@ class Diagnostic(object):
 
     # -------------------------------------
 
-    def tearDown(self, verbose=0):
+    def tearDown(self):
         """Performs cleanup tasks when the POD has finished running.
 
         In order, this 1) creates the POD's HTML output page from its included
@@ -437,9 +417,6 @@ class Diagnostic(object):
         report; 2) converts the POD's output plots (in PS or EPS vector format) 
         to a bitmap format for webpage display; 3) Copies all requested files to
         the output directory and deletes temporary files.
-
-        Args:
-            verbose (:py:obj:`int`, optional): Logging verbosity level. Default 0.
         """
         self.POD_HTML = os.path.join(self.POD_WK_DIR, self.name+'.html')
         # add link and description to main html page
@@ -452,10 +429,9 @@ class Diagnostic(object):
             self.cleanup_pod_files()
             self.verify_pod_links()
 
-        if verbose > 0: 
-            print("---  MDTF.py Finished POD "+self.name+"\n")
-            # elapsed = timeit.default_timer() - start_time
-            # print(pod+" Elapsed time ",elapsed)
+        _log.info("Finished POD %s", self.name)
+        # elapsed = timeit.default_timer() - start_time
+        # print(pod+" Elapsed time ",elapsed)
 
     def make_pod_html(self):
         """Perform templating on POD's html results page(s).
@@ -517,7 +493,8 @@ class Diagnostic(object):
         )
         missing_out = verifier.verify_pod_links(self.name)
         if missing_out:
-            print('ERROR: {} has missing output files.'.format(self.name))
+            _log.error('%s has %s missing output files:', self.name, len(missing_out))
+            _log.error('%s', str(missing_out))
             template_dict = self.__dict__.copy()
             template_dict['missing_output'] = '<br>'.join(missing_out)
             util_mdtf.append_html_template(
@@ -564,7 +541,7 @@ class Diagnostic(object):
             # how many files gs created:
             out_files = glob.glob(f_stem+'_MDTF_TEMP_?.png')
             if not out_files:
-                raise OSError("Error: no png generated from {}".format(f))
+                _log.error("Error: no png generated for %s", f)
             elif len(out_files) == 1:
                 # got one .png, so remove suffix.
                 os.rename(out_files[0], f_stem+'.png')

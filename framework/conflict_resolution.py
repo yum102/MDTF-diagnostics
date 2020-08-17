@@ -1,6 +1,9 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
+import logging
 from itertools import chain
 from collections import defaultdict
+
+_log = logging.getLogger(__name__)
 
 def _default_tiebreaker(*args):
     assert len(args) == 1
@@ -74,8 +77,8 @@ def minimum_cover(option_dict, option_fn, tiebreaker_fn=None):
         all_idx.add(idx)
         for val in option_dict[key]:
             d[option_fn(val)].add(idx)
-    # print("\tDEBUG min_cover indices:", all_idx)
-    # print("\tDEBUG min_cover sets:", d)
+    _log.debug("min_cover indices: %s", all_idx)
+    _log.debug("min_cover sets: %s", d)
     assert set(e for s in iter(d.values()) for e in s) == all_idx
 
     covered_idx = set()
@@ -91,7 +94,7 @@ def minimum_cover(option_dict, option_fn, tiebreaker_fn=None):
         cover.append(elt_to_add)
         covered_idx.update(d[elt_to_add])
     assert cover # is not empty
-    print("\tDEBUG min_cover:", cover)
+    _log.debug("min_cover: %s", cover)
     
     choices = dict.fromkeys(option_dict)
     for key in option_dict:

@@ -16,8 +16,11 @@ Note:
 from __future__ import absolute_import, division, print_function, unicode_literals
 from framework import six
 import re
+import logging
 import datetime
 import operator as op
+
+_log = logging.getLogger(__name__)
 
 # ===============================================================
 # following adapted from Alexandre Decan's python-intervals
@@ -445,9 +448,9 @@ class DateRange(AtomicInterval, _DateMixin):
         dt0, prec0 = self._coerce_to_datetime(start, is_lower=True)
         dt1, prec1 = self._coerce_to_datetime(end, is_lower=False)
         if not (dt0 < dt1):
-            print('\tWarning: args to DateRange out of order ({} >= {})'.format(
-                start, end
-            ))
+            _log.warning(
+                "Args to DateRange out of order (%s >= %s)", start, end
+            )
             dt0, prec0 = self._coerce_to_datetime(end, is_lower=True)
             dt1, prec1 = self._coerce_to_datetime(start, is_lower=False)
         self._left = self.CLOSED
@@ -465,9 +468,7 @@ class DateRange(AtomicInterval, _DateMixin):
         min_ = min(args)
         max_ = max(args)
         if min_ != max_:
-            print('\tWarning: expected precisions {} to be identical'.format(
-                args
-            ))
+            _log.warning("Expected precisions %s to be identical")
         return (min_, max_)
 
     @staticmethod

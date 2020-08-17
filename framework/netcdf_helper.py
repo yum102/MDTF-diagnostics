@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 from framework import six
 import io
+import logging
 import shutil
 if os.name == 'posix' and six.PY2:
     try:
@@ -15,6 +16,8 @@ from framework import util
 from framework import util_mdtf
 import xml.etree.ElementTree as ET
 from six.moves import getcwd
+
+_log = logging.getLogger(__name__)
 
 class NetcdfHelper(object):
     def __init__(self):
@@ -77,10 +80,10 @@ class NetcdfHelper(object):
         d = cls.ncdump_h(in_file=in_file, cwd=cwd, dry_run=dry_run)
         dd = dict()
         if var not in d['variables']:
-            print("Can't find variable {} in {}.".format(var, in_file))
+            _log.error("Can't find variable %s in %s.", var, in_file)
             return dd
         if 'shape' not in d['variables'][var]:
-            print("Can't find shape attribute for {} in {}.".format(var, in_file))
+            _log.error("Can't find shape attribute for %s in %s.", var, in_file)
             return dd
         for ax in d['variables'][var]['shape']:
             assert ax in d['variables']
@@ -102,7 +105,7 @@ def _nco_outfile_decorator(function):
         if 'cwd' not in kwargs:
             kwargs['cwd'] = None
         if 'in_file' not in kwargs:
-            print("nchelper didn't get in_file: {}".format(kwargs))
+            _log.error("nchelper didn't get in_file: %s", kwargs)
             raise AssertionError()
         
         # only pass func the keyword arguments it accepts
@@ -113,8 +116,10 @@ def _nco_outfile_decorator(function):
         if move_back:
             # manually move file back 
             if kwargs.get('dry_run', False):
-                print('DRY_RUN: move {} to {}'.format(
-                    kwargs['out_file'], kwargs['in_file']))
+                _log.info(
+                    'DRY_RUN: move %s to %s',
+                    kwargs['out_file'], kwargs['in_file']
+                )
             else:
                 if kwargs['cwd']:
                     cwd = getcwd()
@@ -216,8 +221,10 @@ class NcoNetcdfHelper(NetcdfHelper):
         dd = dict()
         for var, unit in iter(new_units_dict.items()):
             if var not in d:
-                print(("Warning: no unit attribute for {} in {}."
-                    " Skipping unit conversion").format(var, in_file))
+                _log.warning(
+                    "No unit attribute for %s in %s. Skipping unit conversion.",
+                    var, in_file
+                )
             elif d[var] != unit:
                 dd[var] = unit
         cmd_string = '{var}=udunits({var},"{unit}");{var}@units="{unit}";'

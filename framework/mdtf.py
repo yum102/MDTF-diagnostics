@@ -24,6 +24,7 @@ if sys.version_info[0] == 2 and sys.version_info[1] < 7:
 import os
 import signal
 import shutil
+import logging
 from framework import cli
 from framework import util
 from framework import util_mdtf
@@ -31,6 +32,8 @@ from framework import data_manager
 from framework import environment_manager
 from framework import diagnostic
 from framework import netcdf_helper
+
+_log = logging.getLogger(__name__)
 
 class MDTFFramework(object):
     def __init__(self, code_root, defaults_rel_path):
@@ -141,7 +144,7 @@ class MDTFFramework(object):
             pods = args.intersection(set(config.pods))
             self.pod_list.extend(list(pods))
             for arg in args.difference(set(config.pods)): # remainder:
-                print("WARNING: Didn't recognize POD {}, ignoring".format(arg))
+                _log.warning("Didn't recognize POD %s, ignoring", arg)
             # exclude examples
             self.pod_list = [pod for pod in self.pod_list \
                 if not pod.startswith('example')]
@@ -149,7 +152,7 @@ class MDTFFramework(object):
             print(("WARNING: no PODs selected to be run. Do `./mdtf info pods`"
             " for a list of available PODs, and check your -p/--pods argument."))
             print('Received --pods = {}'.format(list(args)))
-            exit()
+            exit(1)
 
     def parse_case_list(self, cli_obj, config):
         case_list_in = util.coerce_to_iter(cli_obj.case_list)
@@ -179,8 +182,8 @@ class MDTFFramework(object):
             d['convention'] = case_convention
 
         if not ('CASENAME' in d or ('model' in d and 'experiment' in d)):
-            print(("WARNING: Need to specify either CASENAME or model/experiment "
-                "in caselist entry {}, skipping.").format(n+1))
+            _log.warning(("Need to specify either CASENAME or model/experiment "
+                "in caselist entry %s, skipping."), n+1)
             return None
         _ = d.setdefault('model', d.get('convention', ''))
         _ = d.setdefault('experiment', '')
@@ -188,8 +191,8 @@ class MDTFFramework(object):
 
         for field in ['FIRSTYR', 'LASTYR', 'convention']:
             if not d.get(field, None):
-                print(("WARNING: No value set for {} in caselist entry {}, "
-                    "skipping.").format(field, n+1))
+                _log.warning(("WARNING: No value set for %s in caselist entry %s, "
+                    "skipping."), field, n+1)
                 return None
         # if pods set from CLI, overwrite pods in case list
         d['pod_list'] = self.set_case_pod_list(d, cli_obj, config)
@@ -264,7 +267,7 @@ class MDTFFramework(object):
                     return getattr(mod, class_prefix+class_suffix)
                 except:
                     continue
-            print("No class named {}.".format(class_prefix+class_suffix))
+            _log.error("No class named %s.", class_prefix+class_suffix)
             raise Exception('no_class')
 
         self.DataManager = _dispatch('data_manager', 'DataManager')
@@ -283,7 +286,7 @@ class MDTFFramework(object):
                 try:
                     pod = self.Diagnostic(pod_name)
                 except AssertionError as error:  
-                    print(str(error))
+                    _log.error(str(error))
                 case.pods.append(pod)
             case.setUp()
             case.fetch_data()
@@ -317,6 +320,8 @@ if __name__ == '__main__':
         # print('Warning: site-specific cli.jsonc not found, using template.')
         defaults_rel_path = os.path.join(src_dir, 'cli_template.jsonc')
     mdtf = MDTFFramework(code_root, defaults_rel_path)
-    print("\n======= Starting {}".format(__file__))
+    _log.info("Starting %s", __file__)
     mdtf.main_loop()
-    print("Exiting normally from {}".format(__file__))
+    _log.info("Exiting normally from %s", __file__)
+    config = util_mdtf.ConfigManager()
+    _log.info("Output written to %s", config.paths.OUTPUT_DIR)
