@@ -3,17 +3,13 @@ Internal framework code
 
 .. autosummary::
 
-   src.mdtf
-   src.data_manager
-   src.environment_manager
-   src.shared_diagnostic
-   src.util
+   mdtf.mdtf
+   mdtf.data_manager
+   mdtf.environment_manager
+   mdtf.diagnostic
+   mdtf.util
 
 .. toctree::
    :maxdepth: 4
 
-   src.mdtf
-   src.data_manager
-   src.environment_manager
-   src.shared_diagnostic
-   src.util
+   mdtf

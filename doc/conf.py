@@ -57,7 +57,7 @@ _project_github_url = 'https://github.com/NOAA-GFDL/MDTF-diagnostics/tree/develo
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'copy_pod_docs',
+    'copy_outside_docs',
     'sphinx.ext.autosummary',
     'sphinx.ext.autodoc',
     'sphinx.ext.todo',
@@ -316,7 +316,7 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
 # source: https://github.com/readthedocs/readthedocs.org/issues/1139#issuecomment-398083449
 def run_apidoc(_):
     ignore_paths = []
-    argv = ["--force", "--no-toc", "--separate", "-o", "./sphinx", "../src"
+    argv = ["--force", "--no-toc", "--separate", "-o", "./sphinx", "../mdtf"
         ] + ignore_paths
 
     try:

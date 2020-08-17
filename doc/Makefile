@@ -24,7 +24,8 @@ clean:
 clean_all:
 	-rm -rf $(BUILDDIR)
 	-rm -rf sphinx_pods
-	-rm sphinx/src.*
+	-rm -rf sphinx_sites
+	-rm sphinx/mdtf.*
 
 html:
 	$(SPHINXBUILD) -v -T -E -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
@@ -76,5 +77,5 @@ linkcheck:
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
-#	@sphinx-apidoc -f --separate --no-toc --output-dir "./sphinx" "../src"
+#	@sphinx-apidoc -f --separate --no-toc --output-dir "./sphinx" "../mdtf"
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
