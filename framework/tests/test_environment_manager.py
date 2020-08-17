@@ -2,7 +2,7 @@ import os
 import sys
 import unittest
 import mock # define mock os.environ so we don't mess up real env vars
-import mdtf.util as util
+from framework import util
 from framework.environment_manager import EnvironmentManager
 
 class TestEnvironmentManager(unittest.TestCase):

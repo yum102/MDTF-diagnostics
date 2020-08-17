@@ -2,7 +2,7 @@ import os
 import sys
 import unittest
 import mock # define mock os.environ so we don't mess up real env vars
-import mdtf.util_mdtf as util_mdtf
+from framework import util_mdtf
 from framework.data_manager import DataSet, DataManager
 from framework.datelabel import DateFrequency
 from framework.diagnostic import Diagnostic, PodRequirementFailure
@@ -23,7 +23,7 @@ class TestDiagnosticInit(unittest.TestCase):
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     }
 
-    @mock.patch('mdtf.util_mdtf.util.read_json', return_value=dummy_var_translate)
+    @mock.patch('framework.util_mdtf.util.read_json', return_value=dummy_var_translate)
     def setUp(self, mock_read_json):
         setUp_ConfigManager(
             paths=self.dummy_paths, 
@@ -99,7 +99,7 @@ class TestDiagnosticSetUp(unittest.TestCase):
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     }
 
-    @mock.patch('mdtf.util_mdtf.util.read_json', return_value=dummy_var_translate)
+    @mock.patch('framework.util_mdtf.util.read_json', return_value=dummy_var_translate)
     def setUp(self, mock_read_json):
         setUp_ConfigManager(
             config=self.default_case, 
@@ -127,7 +127,7 @@ class TestDiagnosticSetUp(unittest.TestCase):
         self.assertEqual(pod.pod_env_vars['OBS_DATA'], 'TEST_OBS_DATA_ROOT/C')
         self.assertEqual(pod.pod_env_vars['WK_DIR'], 'A')  
 
-    @mock.patch('mdtf.util_mdtf.check_required_dirs')
+    @mock.patch('framework.util_mdtf.check_required_dirs')
     @mock.patch('os.path.exists', return_value = False)
     @mock.patch('os.makedirs')
     def test_setup_pod_directories_mkdir(self, mock_makedirs, mock_exists, \
@@ -180,7 +180,7 @@ class TestDiagnosticCheckVarlist(unittest.TestCase):
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     }
 
-    @mock.patch('mdtf.util_mdtf.util.read_json', return_value=dummy_var_translate)
+    @mock.patch('framework.util_mdtf.util.read_json', return_value=dummy_var_translate)
     def setUp(self, mock_read_json):
         setUp_ConfigManager(
             paths=self.dummy_paths, 
@@ -285,7 +285,7 @@ class TestDiagnosticSetUpCustomSettings(unittest.TestCase):
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     }
 
-    @mock.patch('mdtf.util_mdtf.util.read_json', return_value=dummy_var_translate)
+    @mock.patch('framework.util_mdtf.util.read_json', return_value=dummy_var_translate)
     def setUp(self, mock_read_json):
         setUp_ConfigManager(
             paths=self.dummy_paths, 
@@ -347,7 +347,7 @@ class TestDiagnosticTearDown(unittest.TestCase):
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     }
 
-    @mock.patch('mdtf.util_mdtf.util.read_json', return_value=dummy_var_translate)
+    @mock.patch('framework.util_mdtf.util.read_json', return_value=dummy_var_translate)
     def setUp(self, mock_read_json):
         setUp_ConfigManager(
             paths=self.dummy_paths, 
@@ -368,7 +368,7 @@ class TestDiagnosticTearDown(unittest.TestCase):
     @mock.patch('shutil.copy2')
     @mock.patch('os.system')
     @mock.patch('os.remove')
-    @mock.patch('mdtf.util.append_html_template')
+    @mock.patch('framework.util_mdtf.append_html_template')
     def test_make_pod_html(self, mock_append_html_template, mock_remove, \
         mock_system, mock_copy2, mock_exists): 
         pod = Diagnostic('DUMMY_POD')

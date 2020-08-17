@@ -9,7 +9,7 @@ if os.name == 'posix' and sys.version_info[0] < 3:
     else:
         import subprocess
 from tests import shared_test_utils as shared
-import mdtf.gfdl as gfdl
+from sites.NOAA-GFDL import gfdl
 from framework.mdtf import MDTFFramework
 
 DOING_TRAVIS = (os.environ.get('TRAVIS', False) == 'true')

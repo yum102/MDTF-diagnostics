@@ -1,6 +1,6 @@
 import os
 import unittest
-import mdtf.cmip6 as cmip6
+from framework import cmip6
 from framework.cmip6 import CMIP6DateFrequency as dt_freq
 from tests.shared_test_utils import setUp_ConfigManager, tearDown_ConfigManager
 
