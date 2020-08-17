@@ -3,7 +3,7 @@ Framework configuration for user model data
 
 In this section we describe how to run the framework with your own model data, and more configuration options than the test case described in :doc:`start_install`.
 
-The complete set of configuration options is described in :doc:`ref_cli`, or by running ``% ./mdtf --help``. All options can be specified as a command-line flag (e.g., ``--OUTPUT_DIR``) or as a JSON configuration input file of the form provided in `framework/default_tests.jsonc <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/framework/default_tests.jsonc>`__. We recommend using this file as a template, making copies and customizing it as needed.
+The complete set of configuration options is described in :doc:`ref_cli`, or by running ``% ./mdtf --help``. All options can be specified as a command-line flag (e.g., ``--OUTPUT_DIR``) or as a JSON configuration input file of the form provided in `sample_input.jsonc <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/sample_input.jsonc>`__. We recommend using this file as a template, making copies and customizing it as needed.
 
 Options given on the command line always take precedence over the input file. This is so you can store options that don't frequently change in the file (e.g., the input/output data paths) and use command-line flags to set only those options you want to change from run to run (e.g., the analysis period start and end years). In all cases, the complete set of option values used in each run of the framework will be included in the log file as part of the output, for reproducibility and provenance.
 
@@ -90,7 +90,7 @@ Alternatively, the framework will load any lookup tables of the form ``framework
 Running the code on your data
 -----------------------------
 
-After adding your model data to the directory hierarchy as described above, you can run the framework on that data using the following options. These can either be set in the ``caselist`` section of the configuration input file (see `framework/default_tests.jsonc <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/framework/default_tests.jsonc>`__ for an example/template), or individually as command-line flags (e.g., ``--CASENAME my_new_experiment``). Required settings are:
+After adding your model data to the directory hierarchy as described above, you can run the framework on that data using the following options. These can either be set in the ``caselist`` section of the configuration input file (see `sample_input.jsonc <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/develop/sample_input.jsonc>`__ for an example/template), or individually as command-line flags (e.g., ``--CASENAME my_new_experiment``). Required settings are:
 
 - ``CASENAME`` should be the same string used to label your model run.
 - ``convention`` describes the variable naming convention your model uses, determined in the previous section.

@@ -138,11 +138,11 @@ After installing the framework-specific conda environments, you shouldn't manual
 
 ## 4. Configure framework paths
 
-The MDTF framework supports setting configuration options in a file as well as on the command line. An example of the configuration file format is provided at [framework/default_tests.jsonc](https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/main/framework/default_tests.jsonc). We recommend configuring the following settings by editing a copy of this file. 
+The MDTF framework supports setting configuration options in a file as well as on the command line. An example of the configuration file format is provided at [sample_input.jsonc](https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/main/sample_input.jsonc). We recommend configuring the following settings by editing a copy of this file. 
 
 Relative paths in the configuration file will be interpreted relative to `$CODE_ROOT`. The following settings need to be configured before running the framework:
 
-- If you've saved the supporting data in the directory structure described in section 1.2, the default values for `OBS_DATA_ROOT` and `MODEL_DATA_ROOT` given in `framework/default_tests.jsonc` (`../inputdata/obs_data` and `../inputdata/model`, respectively) will be correct. If you put the data in a different location, these paths should be changed accordingly.
+- If you've saved the supporting data in the directory structure described in section 1.2, the default values for `OBS_DATA_ROOT` and `MODEL_DATA_ROOT` given in `sample_input.jsonc` (`../inputdata/obs_data` and `../inputdata/model`, respectively) will be correct. If you put the data in a different location, these paths should be changed accordingly.
 - `OUTPUT_DIR` should be set to the desired location for output files. The output of each run of the framework will be saved in a different subdirectory in this location.
 - `conda_root` should be set to the value of `$CONDA_ROOT` used above in :ref:`ref-conda-env-install`.
 - If you specified a non-default conda environment location with `$CONDA_ENV_DIR`, set `conda_env_root` to that value; otherwise, leave it blank.
@@ -167,14 +167,14 @@ This should print the current version of the framework.
 If you've downloaded the NCAR-CESM-CAM sample data (described in section 1.2 above), you can now perform a trial run of the framework:
 ```
 % cd $CODE_ROOT
-% ./mdtf -f framework/default_tests.jsonc
+% ./mdtf -f sample_input.jsonc
 ```
 
 Run time may be 10-20 minutes, depending on your system.
 
-- If you edited or renamed `framework/default_tests.jsonc`, as recommended in the previous section, pass the path to that configuration file instead.
+- If you edited or renamed `sample_input.jsonc`, as recommended in the previous section, pass the path to that configuration file instead.
 - The output files for this test case will be written to `$OUTPUT_DIR/MDTF_QBOi.EXP1.AMIP.001_1977_1981`. When the framework is finished, open `$OUTPUT_DIR/QBOi.EXP1.AMIP.001_1977_1981/index.html` in a web browser to view the output report.
-- The framework defaults to running all available PODs, which is overridden by the `pod_list` option in the `framework/default_tests.jsonc` configuration file. Individual PODs can be specified as a comma-delimited list of POD names.
+- The framework defaults to running all available PODs, which is overridden by the `pod_list` option in the `sample_input.jsonc` configuration file. Individual PODs can be specified as a comma-delimited list of POD names.
 - Currently the framework only analyzes data from one model run at a time. To run the MJO_prop_amp POD on the GFDL.CM4.c96L32.am4g10r8 sample data, delete or comment out the section for QBOi.EXP1.AMIP.001 in `caselist` section of the configuration file, and uncomment the section for GFDL.CM4.c96L32.am4g10r8.
 
 ## 6. Next steps
