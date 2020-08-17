@@ -17,7 +17,7 @@ The following software needs to be available on your ``$PATH`` when the framewor
 Configuration instructions
 --------------------------
 
-Configuring this mode of operation requires adding additional settings to the ``src/default_tests.jsonc`` file. This is a template/example of an input file you can use to define configuration options instead of re-typing them on the command line every time you run the framework. In addition to the settings described in :ref:`ref-configure`, you will also need to:
+Configuring this mode of operation requires adding additional settings to the ``mdtf/default_tests.jsonc`` file. This is a template/example of an input file you can use to define configuration options instead of re-typing them on the command line every time you run the framework. In addition to the settings described in :ref:`ref-configure`, you will also need to:
 
 - Change the value for ``environment_manager`` from ``"Conda"`` to ``"Virtualenv"``.
 - Any values for ``conda_root`` and ``conda_env_root`` will be ignored.

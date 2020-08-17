@@ -49,7 +49,7 @@
 #     
 #     Please change the variable names and conversion factor according to your data before running
 #     MJO teleconnection diagnostic at :
-#     src/config_<model name>.json
+#     mdtf/config_<model name>.json
 #     Please provide each input variable into a single file
 #
 #   -------------------------------------------------------------------------------------------------------
