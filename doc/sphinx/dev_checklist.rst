@@ -21,7 +21,7 @@ All scripts should be placed in a subdirectory of ``diagnostics/``. Among the sc
 
    - The framework will call the driver script, which calls the other scripts in the same POD directory.
 
-   - If you need a new Conda environment, add a new .yml file to ``mdtf/conda/``, and install the environment using the ``conda_env_setup.sh`` script as described in the :doc:`Getting Started <start_install>`.
+   - If you need a new Conda environment, add a new .yml file to ``framework/conda/``, and install the environment using the ``conda_env_setup.sh`` script as described in the :doc:`Getting Started <start_install>`.
 
 
 POD settings file

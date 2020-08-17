@@ -316,7 +316,7 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
 # source: https://github.com/readthedocs/readthedocs.org/issues/1139#issuecomment-398083449
 def run_apidoc(_):
     ignore_paths = []
-    argv = ["--force", "--no-toc", "--separate", "-o", "./sphinx", "../mdtf"
+    argv = ["--force", "--no-toc", "--separate", "-o", "./sphinx", "../framework"
         ] + ignore_paths
 
     try:

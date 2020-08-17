@@ -10,11 +10,11 @@ Usage
     mdtf info [TOPIC]
 
 
-If the framework was installed to use `Conda <https://docs.conda.io/en/latest/>`__ (recommended), the top-level ``mdtf`` driver script is created at install time. It sets the conda environment and calls `mdtf/mdtf.py <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/main/mdtf/mdtf.py>`__, the top-level script for non-conda installations.
+If the framework was installed to use `Conda <https://docs.conda.io/en/latest/>`__ (recommended), the top-level ``mdtf`` driver script is created at install time. It sets the conda environment and calls `framework/mdtf.py <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/main/framework/mdtf.py>`__, the top-level script for non-conda installations.
 
 The first form of the command runs diagnostics on data at ``CASE_ROOT_DIR``, using configuration set on the command line or in ``INPUT_FILE``. 
 
-* ``INPUT_FILE``: Path to a user configuration file that sets options listed here. This can be a JSON file of the form given in `mdtf/default_tests.jsonc <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/main/mdtf/default_tests.jsonc>`__ (which is intended to be copied and used as a template), or a text file containing command-line arguments. Options set explicitly on the command line will still override settings in this file.
+* ``INPUT_FILE``: Path to a user configuration file that sets options listed here. This can be a JSON file of the form given in `framework/default_tests.jsonc <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/main/framework/default_tests.jsonc>`__ (which is intended to be copied and used as a template), or a text file containing command-line arguments. Options set explicitly on the command line will still override settings in this file.
 * ``CASE_ROOT_DIR``: Root directory of model data to analyze.
 
 The second form of the command prints information about available diagnostics; run without an argument ('mdtf info') to see a list of available topics.
