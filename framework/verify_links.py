@@ -25,7 +25,7 @@ import urllib.request
 import urllib.error
 from framework import util
 
-_log = logging.getLogger('mdtf.'+__name__)
+_log = logging.getLogger(__name__)
 
 Link = collections.namedtuple('Link', ['origin', 'target'])
 Link.__doc__ = """

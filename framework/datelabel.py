@@ -20,7 +20,7 @@ import logging
 import datetime
 import operator as op
 
-_log = logging.getLogger('mdtf.'+__name__)
+_log = logging.getLogger(__name__)
 
 # ===============================================================
 # following adapted from Alexandre Decan's python-intervals

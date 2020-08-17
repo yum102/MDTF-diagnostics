@@ -25,7 +25,7 @@ import errno
 import json
 from six.moves import getcwd, collections_abc
 
-_log = logging.getLogger('mdtf.'+__name__)
+_log = logging.getLogger(__name__)
 
 class _Singleton(type):
     """Private metaclass that creates a :class:`~util.Singleton` base class when

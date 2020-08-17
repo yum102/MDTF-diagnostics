@@ -23,7 +23,7 @@ from framework import datelabel
 from framework import netcdf_helper
 from framework.diagnostic import PodRequirementFailure
 
-_log = logging.getLogger('mdtf.'+__name__)
+_log = logging.getLogger(__name__)
 
 @six.python_2_unicode_compatible
 class DataQueryFailure(Exception):

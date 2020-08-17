@@ -8,7 +8,7 @@ from framework import util
 from framework import util_mdtf
 from framework import verify_links
 
-_log = logging.getLogger('mdtf.'+__name__)
+_log = logging.getLogger(__name__)
 
 @six.python_2_unicode_compatible
 class PodRequirementFailure(Exception):

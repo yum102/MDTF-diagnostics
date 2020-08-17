@@ -7,7 +7,7 @@ from framework import datelabel
 from framework import util
 from framework import util_mdtf
 
-_log = logging.getLogger('mdtf.'+__name__)
+_log = logging.getLogger(__name__)
 
 class CMIP6_CVs(util.Singleton):
     def __init__(self, unittest=False):

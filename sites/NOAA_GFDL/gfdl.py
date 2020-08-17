@@ -26,7 +26,7 @@ from framework.environment_manager import VirtualenvEnvironmentManager, CondaEnv
 from framework.diagnostic import Diagnostic, PodRequirementFailure
 from framework.netcdf_helper import NcoNetcdfHelper # only option currently implemented
 
-_log = logging.getLogger('mdtf.'+__name__)
+_log = logging.getLogger(__name__)
 
 class ModuleManager(util.Singleton):
     _current_module_versions = {

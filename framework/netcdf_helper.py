@@ -17,7 +17,7 @@ from framework import util_mdtf
 import xml.etree.ElementTree as ET
 from six.moves import getcwd
 
-_log = logging.getLogger('mdtf.'+__name__)
+_log = logging.getLogger(__name__)
 
 class NetcdfHelper(object):
     def __init__(self):

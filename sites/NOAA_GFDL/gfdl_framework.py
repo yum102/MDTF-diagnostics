@@ -22,7 +22,7 @@ from framework import diagnostic
 from framework import netcdf_helper
 from sites.NOAA_GFDL import gfdl
 
-_log = logging.getLogger('mdtf.'+__name__)
+_log = logging.getLogger(__name__)
 
 class GFDLMDTFFramework(mdtf.MDTFFramework):
     # add gfdl to search path for DataMgr, EnvMgr

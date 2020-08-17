@@ -12,7 +12,7 @@ import shlex
 import collections
 from framework import util
 
-_log = logging.getLogger('mdtf.'+__name__)
+_log = logging.getLogger(__name__)
 
 class CustomHelpFormatter(
         argparse.RawDescriptionHelpFormatter, 

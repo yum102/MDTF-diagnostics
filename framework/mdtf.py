@@ -33,7 +33,7 @@ from framework import environment_manager
 from framework import diagnostic
 from framework import netcdf_helper
 
-_log = logging.getLogger('mdtf.'+__name__)
+_log = logging.getLogger(__name__)
 
 class MDTFFramework(object):
     def __init__(self, code_root, defaults_rel_path):

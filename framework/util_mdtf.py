@@ -11,7 +11,7 @@ import string
 import tempfile
 from framework import util
 
-_log = logging.getLogger('mdtf.'+__name__)
+_log = logging.getLogger(__name__)
 
 class ConfigManager(util.Singleton):
     def __init__(self, cli_obj=None, pod_info_tuple=None, unittest=False):

@@ -3,7 +3,7 @@ import logging
 from itertools import chain
 from collections import defaultdict
 
-_log = logging.getLogger('mdtf.'+__name__)
+_log = logging.getLogger(__name__)
 
 def _default_tiebreaker(*args):
     assert len(args) == 1
