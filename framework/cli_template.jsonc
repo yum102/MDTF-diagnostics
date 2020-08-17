@@ -2,7 +2,7 @@
 // This is used by install.py to generate cli.jsonc. 
 // DO NOT modify this file. Instead, edit cli.jsonc.
 //
-// Entries here are used in mdtf/cli.py to configure command-line options 
+// Entries here are used in framework/cli.py to configure command-line options 
 // accepted by the script. Syntax is based on python's argparse library, see
 // https://docs.python.org/2.7/library/argparse.html or 
 // https://docs.python.org/2.7/howto/argparse.html. 
@@ -18,7 +18,7 @@
       "version": "%(prog)s 3.0 beta 2"
     },{
       "name": "input_file",
-      "help": "Path to a user configuration file that sets options listed here. This can be a JSON file of the form given in mdtf/default_tests.jsonc, or a text file containing command-line arguments. Options set explicitly on the command line will still override settings in this file.",
+      "help": "Path to a user configuration file that sets options listed here. This can be a JSON file of the form given in framework/default_tests.jsonc, or a text file containing command-line arguments. Options set explicitly on the command line will still override settings in this file.",
       "is_positional": true,
       "nargs" : "?", // 0 or 1 occurrences: might have set this with --input_file
       "metavar" : "INPUT_FILE"
