@@ -1,17 +1,9 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 import io
-from framework import six
 import re
 import logging
 import shutil
-if os.name == 'posix' and six.PY2:
-    try:
-        import subprocess32 as subprocess
-    except ImportError:
-        import subprocess
-else:
-    import subprocess
+import subprocess
 from collections import defaultdict, namedtuple
 from itertools import chain
 from operator import attrgetter, itemgetter
@@ -217,7 +209,7 @@ def GfdlautoDataManager(case_dict, DateFreqMixin=None):
         exit()
 
 
-class GfdlarchiveDataManager(six.with_metaclass(ABCMeta, DataManager)):
+class GfdlarchiveDataManager(DataManager, metaclass=ABCMeta):
     def __init__(self, case_dict, DateFreqMixin=None):
         # load required modules
         modMgr = ModuleManager()
@@ -772,7 +764,7 @@ class GfdlppDataManager(GfdlarchiveDataManager):
             choices[data_key] = self.UndecidedKey(component=cmpt, chunk_freq=str(chunk_freq))
         return choices
 
-class Gfdlcmip6abcDataManager(six.with_metaclass(ABCMeta, GfdlarchiveDataManager)):
+class Gfdlcmip6abcDataManager(GfdlarchiveDataManager, metaclass=ABCMeta):
     def __init__(self, case_dict, DateFreqMixin=None):
         # set root_dir
         # from experiment and model, determine institution and mip

@@ -13,8 +13,6 @@ Note:
 Note: 
     Timezone support is not currently implemented.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-from framework import six
 import re
 import logging
 import datetime
@@ -423,7 +421,6 @@ class _DateMixin(object):
         return dt + td
 
 
-@six.python_2_unicode_compatible
 class DateRange(AtomicInterval, _DateMixin):
     """Class representing a range of variable-precision dates. 
 
@@ -438,7 +435,7 @@ class DateRange(AtomicInterval, _DateMixin):
     def __init__(self, start, end=None, precision=None):
         "Init method for DateRange."
         if not end:
-            if isinstance(start, six.string_types):
+            if isinstance(start, str):
                 (start, end) = start.split(self._range_sep)
             elif len(start) == 2:
                 (start, end) = start
@@ -582,7 +579,6 @@ class DateRange(AtomicInterval, _DateMixin):
         return super(DateRange, self).__ge__(other)
 
 
-@six.python_2_unicode_compatible
 class Date(DateRange):
     """Define a date with variable level precision.
 
@@ -599,7 +595,7 @@ class Date(DateRange):
         if isinstance(args[0], (datetime.date, datetime.datetime)):
             dt_args = self._parse_datetime(args[0])
             single_arg_flag = True
-        elif isinstance(args[0], six.string_types):
+        elif isinstance(args[0], str):
             dt_args = self._parse_input_string(args[0])
             single_arg_flag = True
         else:
@@ -700,7 +696,6 @@ class Date(DateRange):
         return (not self.__eq__(other)) # more foolproof
 
 
-@six.python_2_unicode_compatible
 class DateFrequency(datetime.timedelta):
     """Class representing a date frequency or period.
 
@@ -710,9 +705,9 @@ class DateFrequency(datetime.timedelta):
     """
     # define __new__, not __init__, because timedelta is immutable
     def __new__(cls, quantity, unit=None):
-        if isinstance(quantity, six.string_types) and (unit is None):
+        if isinstance(quantity, str) and (unit is None):
             (kwargs, attrs) = cls._parse_input_string(None, quantity)
-        elif not isinstance(quantity, int) or not isinstance(unit, six.string_types):
+        elif not isinstance(quantity, int) or not isinstance(unit, str):
             raise ValueError("Malformed input")
         else:
             (kwargs, attrs) = cls._parse_input_string(quantity, unit)

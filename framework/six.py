@@ -919,7 +919,7 @@ def ensure_str(s, encoding='utf-8', errors='strict'):
 
 
 def ensure_text(s, encoding='utf-8', errors='strict'):
-    """Coerce *s* to six.text_type.
+    """Coerce *s* to str.
 
     For Python 2:
       - `unicode` -> `unicode`
