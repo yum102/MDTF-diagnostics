@@ -1,6 +1,4 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
 import os
-from framework import six
 import re
 import logging
 from framework import datelabel
@@ -86,7 +84,6 @@ class CMIP6_CVs(util.Singleton):
             if (parse_mip_table_id(tbl)['date_freq'] == date_freq)]
 
 
-@six.python_2_unicode_compatible
 class CMIP6DateFrequency(datelabel.DateFrequency):
     """
     `<http://goo.gl/v1drZl>`__, page 16

@@ -1,6 +1,4 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
 import os
-from framework import six
 import glob
 import copy
 import logging
@@ -10,13 +8,7 @@ from itertools import chain
 from operator import attrgetter
 from abc import ABCMeta, abstractmethod
 import datetime
-if os.name == 'posix' and six.PY2:
-    try:
-        from subprocess32 import CalledProcessError
-    except ImportError:
-        from subprocess import CalledProcessError
-else:
-    from subprocess import CalledProcessError
+from subprocess import CalledProcessError
 from framework import util
 from framework import util_mdtf
 from framework import datelabel
@@ -25,7 +17,6 @@ from framework.diagnostic import PodRequirementFailure
 
 _log = logging.getLogger(__name__)
 
-@six.python_2_unicode_compatible
 class DataQueryFailure(Exception):
     """Exception signaling a failure to find requested data in the remote location. 
     
@@ -44,7 +35,6 @@ class DataQueryFailure(Exception):
             return 'Query failure: {}.'.format(self.msg)
 
 
-@six.python_2_unicode_compatible
 class DataAccessError(Exception):
     """Exception signaling a failure to obtain data from the remote location.
     """
@@ -123,7 +113,7 @@ class DataSet(util.NameSpace):
         FrozenDataSet = namedtuple('FrozenDataSet', keys_to_hash)
         return FrozenDataSet(**d2)
 
-class DataManager(six.with_metaclass(ABCMeta)):
+class DataManager(object, metaclass=ABCMeta):
     # analogue of TestFixture in xUnit
 
     def __init__(self, case_dict, DateFreqMixin=None):

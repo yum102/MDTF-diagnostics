@@ -1,21 +1,12 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
 import os
-from framework import six
 import io
 import logging
 import shutil
-if os.name == 'posix' and six.PY2:
-    try:
-        import subprocess32 as subprocess
-    except ImportError:
-        import subprocess
-else:
-    import subprocess
+import subprocess
 from framework import datelabel
 from framework import util
 from framework import util_mdtf
 import xml.etree.ElementTree as ET
-from six.moves import getcwd
 
 _log = logging.getLogger(__name__)
 
@@ -109,7 +100,7 @@ def _nco_outfile_decorator(function):
             raise AssertionError()
         
         # only pass func the keyword arguments it accepts
-        named_args = six.get_function_code(function).co_varnames
+        named_args = function.__code__.co_varnames
         fkwargs = dict((k, kwargs[k]) for k in named_args if k in kwargs)
         result = function(*args, **fkwargs)
         
@@ -122,7 +113,7 @@ def _nco_outfile_decorator(function):
                 )
             else:
                 if kwargs['cwd']:
-                    cwd = getcwd()
+                    cwd = os.getcwd()
                     os.chdir(kwargs['cwd'])
                 os.remove(kwargs['in_file'])
                 shutil.move(kwargs['out_file'], kwargs['in_file'])

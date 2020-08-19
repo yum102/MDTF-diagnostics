@@ -1,27 +1,19 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 import io
-from framework import six
 import glob
 import logging
 import shutil
 import atexit
 import signal
 from abc import ABCMeta, abstractmethod
-if os.name == 'posix' and six.PY2:
-    try:
-        import subprocess32 as subprocess
-    except ImportError:
-        import subprocess
-else:
-    import subprocess
+import subprocess
 from framework import util
 from framework import util_mdtf
 from framework.diagnostic import PodRequirementFailure
 
 _log = logging.getLogger(__name__)
 
-class EnvironmentManager(six.with_metaclass(ABCMeta)):
+class EnvironmentManager(object, metaclass=ABCMeta):
     # analogue of TestSuite in xUnit - abstract base class
 
     def __init__(self):
