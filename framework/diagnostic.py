@@ -1,6 +1,4 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
 import os
-from framework import six
 import glob
 import logging
 import shutil
@@ -10,7 +8,6 @@ from framework import verify_links
 
 _log = logging.getLogger(__name__)
 
-@six.python_2_unicode_compatible
 class PodRequirementFailure(Exception):
     """Exception raised if POD doesn't have required resoruces to run. 
     """

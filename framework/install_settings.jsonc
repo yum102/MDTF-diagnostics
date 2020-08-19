@@ -58,7 +58,7 @@
     },
     "cli_defaults": {
       "template": "framework/cli_template.jsonc",
-      "config_in": "framework/default_tests.jsonc",
+      "config_in": "sample_input.jsonc",
       "config_out": "framework/default_tests_out.jsonc",
       "default_keys": [
         "MODEL_DATA_ROOT", "OBS_DATA_ROOT", "WORKING_DIR", "OUTPUT_DIR", 

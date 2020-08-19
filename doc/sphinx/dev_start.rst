@@ -76,7 +76,7 @@ If your POD requires languages that aren't available in an existing environment 
 Framework interaction with conda environments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As  described in :ref:`ref-execute`, when you run the ``mdtf`` executable, among other things, it reads ``pod_list`` in ``default_tests.jsonc`` and executes POD codes accordingly. For a POD included in the list (referred to as $POD_NAME):
+As  described in :ref:`ref-execute`, when you run the ``mdtf`` executable, among other things, it reads ``pod_list`` in ``sample_input.jsonc`` and executes POD codes accordingly. For a POD included in the list (referred to as $POD_NAME):
 
 1. The framework will first try to look for the YAML file ``framework/conda/env_$POD_NAME.yml``. If it exists, the framework will assume that the corresponding conda environment ``_MDTF_$POD_NAME`` has been installed under ``$CONDA_ENV_DIR``, and will switch to this environment and run the POD.
 
@@ -111,7 +111,7 @@ Recall how the framework finds a proper Conda environment for a POD. First, it s
 
 - Have the framework run your POD on suitable test data.
 
-   1. Add your POD's short name to the ``pod_list`` section of the configuration input file (template: ``framework/default_tests.jsonc``).
+   1. Add your POD's short name to the ``pod_list`` section of the configuration input file (template: ``sample_input.jsonc``).
 
    2. Prepare the test data as described in :doc:`start_config`.
 

@@ -1,29 +1,21 @@
 """Common functions and classes used in multiple places in the MDTF code.
 Specifically, util.py implements general functionality that's not MDTF-specific.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 import io
-from framework import six
 import re
 import logging
 import shlex
 import glob
 import shutil
 import collections
+import collections.abc
 from distutils.spawn import find_executable
-if os.name == 'posix' and six.PY2:
-    try:
-        import subprocess32 as subprocess
-    except ImportError:
-        import subprocess
-else:
-    import subprocess
+import subprocess
 import signal
 import threading
 import errno
 import json
-from six.moves import getcwd, collections_abc
 
 _log = logging.getLogger(__name__)
 
@@ -38,10 +30,11 @@ class _Singleton(type):
             cls._instances[cls] = super(_Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
-class Singleton(_Singleton(six.ensure_str('SingletonMeta'), (object,), {})): 
+class Singleton(_Singleton('SingletonMeta', (object,), {})): 
     """Parent class defining the 
     `Singleton <https://en.wikipedia.org/wiki/Singleton_pattern>`_ pattern. We
-    use this as safer way to pass around global state.
+    use this as safer way to pass around global state. See 
+    `<https://stackoverflow.com/a/6798042>`__.
     """
     @classmethod
     def _reset(cls):
@@ -332,7 +325,7 @@ def write_json(struct, file_path, sort_keys=False):
         str_ = json.dumps(struct, 
             sort_keys=sort_keys, indent=2, separators=(',', ': '))
         with io.open(file_path, 'w', encoding='utf-8') as file_:
-            file_.write(six.ensure_text(str_, encoding='utf-8', errors='strict'))
+            file_.write(str_.encode(encoding='utf-8', errors='strict'))
     except IOError:
         _log.critical('Fatal IOError when trying to write %s.', file_path)
         exit()
@@ -444,7 +437,7 @@ def resolve_path(path, root_path="", env=None):
     if os.path.isabs(path):
         return path
     if root_path == "":
-        root_path = getcwd()
+        root_path = os.getcwd()
     assert os.path.isabs(root_path)
     return os.path.normpath(os.path.join(root_path, path))
 
@@ -521,7 +514,7 @@ def run_command(command, env=None, cwd=None, timeout=0, dry_run=False):
     def _timeout_handler(signum, frame):
         raise TimeoutAlarm
 
-    if isinstance(command, six.string_types):
+    if isinstance(command, str):
         command = shlex.split(command)
     cmd_str = ' '.join(command)
     if dry_run:
@@ -595,7 +588,7 @@ def run_shell_command(command, env=None, cwd=None, dry_run=False):
     # starting bash directly instead of from sh.)
     bash_exec = find_executable('bash')
 
-    if not isinstance(command, six.string_types):
+    if not isinstance(command, str):
         command = ' '.join(command)
     if dry_run:
         _log.warning('DRY_RUN: call %s', command)
@@ -633,8 +626,8 @@ def run_shell_command(command, env=None, cwd=None, dry_run=False):
         return stdout.splitlines()
 
 def is_iterable(obj):
-    return isinstance(obj, collections_abc.Iterable) \
-        and not isinstance(obj, six.string_types) # py3 strings have __iter__
+    return isinstance(obj, collections.abc.Iterable) \
+        and not isinstance(obj, str) # py3 strings have __iter__
 
 def coerce_to_iter(obj, coll_type=list):
     assert coll_type in [list, set, tuple] # only supported types for now
@@ -659,7 +652,7 @@ def coerce_from_iter(obj):
 def filter_kwargs(kwarg_dict, function):
     """Given a dict of kwargs, return only those kwargs accepted by function.
     """
-    named_args = set(six.get_function_code(function).co_varnames)
+    named_args = set(function.__code__.co_varnames)
     # if 'kwargs' in named_args:
     #    return kwarg_dict # presumably can handle anything
     return dict((k, kwarg_dict[k]) for k in named_args \

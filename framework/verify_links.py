@@ -8,8 +8,8 @@ Based on test_website by Dani Coleman, bundy@ucar.edu
 """
 import sys
 # do version check before importing other stuff
-if sys.version_info[0] != 3 or sys.version_info[1] < 6:
-    print(("ERROR: MDTF currently only supports python >= 3.6.*. Please check "
+if sys.version_info[0] < 3 or sys.version_info[1] < 7:
+    print(("ERROR: MDTF currently only supports python >= 3.7. Please check "
     "which version is on your $PATH (e.g. with `which python`.)"))
     print("Attempted to run with following python version:\n{}".format(sys.version))
     exit(1)

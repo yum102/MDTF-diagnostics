@@ -11,20 +11,20 @@ In this section, we describe the actions that are taken when the framework is ru
 
 We begin with a reminder that there are 2 essential files for the operation of the framework and POD:
 
-- ``framework/default_tests.jsonc``: configuration input for the framework.
+- ``sample_input.jsonc``: configuration input for the framework.
 - ``diagnostics/example/settings.jsonc``: settings file for the example POD.
 
 
 Step 1: Framework invocation
 ----------------------------
 
-The user runs the framework by executing the framework’s main driver script ``$CODE_ROOT/mdtf``, rather than executing the PODs directly. This is where the user specifies the model run to be analyzed, and chooses which PODs to run via the ``pod_list`` section in ``default_tests.jsonc``.
+The user runs the framework by executing the framework’s main driver script ``$CODE_ROOT/mdtf``, rather than executing the PODs directly. This is where the user specifies the model run to be analyzed, and chooses which PODs to run via the ``pod_list`` section in ``sample_input.jsonc``.
 
 - Some of the configuration options can be input through command line, see the :doc:`command line reference <ref_cli>` or run ``% $CODE_ROOT/mdtf --help``.
 
 At this stage, the framework also creates the directory ``$OUTPUT_DIR/`` (default: ``framework/wkdir/``) and all subdirectories therein for hosting the output files by the framework and PODs from each run.
 
-- If you've run the framework with both ``save_ps`` and ``save_nc`` in ``default_tests.jsonc`` set to ``true``, check the output directory structure and files therein.
+- If you've run the framework with both ``save_ps`` and ``save_nc`` in ``sample_input.jsonc`` set to ``true``, check the output directory structure and files therein.
 
 Note that when running, the framework will keep collecting the messages relevant to individual PODs, including (1) the status of required data and environment, and (2) texts printed out by PODs during execution, and will save them as log files under each POD's output directory. These ``log`` files can be viewed via the top-level results page ``index.html`` and, together with messages printed in the terminal, are useful for debugging.
 
@@ -62,7 +62,7 @@ The example POD uses only one model variable in its `varlist <https://github.com
 Step 3: Runtime environment configuration
 -----------------------------------------
 
-The framework reads the other parts of your POD’s ``settings.jsonc``, e.g., ``pod_env_vars``, and generates additional environment variables accordingly (on top of those being defined through ``default_tests.jsonc``).
+The framework reads the other parts of your POD’s ``settings.jsonc``, e.g., ``pod_env_vars``, and generates additional environment variables accordingly (on top of those being defined through ``sample_input.jsonc``).
 
 Furthermore, in the ``runtime_requirements`` section of ``settings.jsonc``, we request that you provide a list of languages and third-party libraries your POD uses. The framework will check that all these requirements are met by one of the Conda environments under ``$CONDA_ENV_DIR/``.
 
@@ -81,7 +81,7 @@ Example diagnostic
 
 In its ``settings.jsonc``, the example POD lists its `requirements <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/main/diagnostics/example/settings.jsonc#L38>`__: Python 3, and the matplotlib, xarray and netCDF4 third-party libraries for Python. In this case, the framework assigns the POD to run in the generic `python3_base <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/main/framework/conda/env_python3_base.yml>`__ environment provided by the framework.
 
-- In ``example.log``, under ``Env vars:`` is a comprehensive list of environment variables prepared for the POD by the framework. A great part of them are defined as in `framework/fieldlist_CMIP.jsonc <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/main/framework/fieldlist_CMIP.jsonc>`__ via setting ``convention`` in ``default_tests.jsonc`` to ``CMIP``. Some of the environment variables are POD-specific as defined under `pod_env_vars <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/main/diagnostics/example/settings.jsonc#L29>`__ in the POD's ``settings.jsonc``, e.g., ``EXAMPLE_FAV_COLOR``.
+- In ``example.log``, under ``Env vars:`` is a comprehensive list of environment variables prepared for the POD by the framework. A great part of them are defined as in `framework/fieldlist_CMIP.jsonc <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/main/framework/fieldlist_CMIP.jsonc>`__ via setting ``convention`` in ``sample_input.jsonc`` to ``CMIP``. Some of the environment variables are POD-specific as defined under `pod_env_vars <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/main/diagnostics/example/settings.jsonc#L29>`__ in the POD's ``settings.jsonc``, e.g., ``EXAMPLE_FAV_COLOR``.
 
 - In ``example.log``, after ``--- MDTF.py calling POD example``, the framework verifies the Conda-related paths, and makes sure that the ``runtime_requirements`` in ``settings.jsonc`` are met by the python3_base environment via checking `env_python3_base.yml <https://github.com/NOAA-GFDL/MDTF-diagnostics/blob/main/framework/conda/env_python3_base.yml>`__.
 
@@ -155,9 +155,9 @@ The html template for each POD is then copied to ``$WK_DIR`` by the framework.
 
 - If ``save_ps`` and ``save_nc`` are set to ``false``, the ``.eps`` and ``.nc`` files will be deleted.
 
-Finally, the framework links your POD’s html page to the top-level ``index.html``, and copies all files to the specified output location (``OUTPUT_DIR`` in ``default_tests.jsonc``; same as ``WK_DIR`` by default).
+Finally, the framework links your POD’s html page to the top-level ``index.html``, and copies all files to the specified output location (``OUTPUT_DIR`` in ``sample_input.jsonc``; same as ``WK_DIR`` by default).
 
-- If ``make_variab_tar`` in ``default_tests.jsonc`` is set to ``true``, the framework will create a tar file for the output directory, in case you're working on a server, and have to move the file to a local machine before viewing it.
+- If ``make_variab_tar`` in ``sample_input.jsonc`` is set to ``true``, the framework will create a tar file for the output directory, in case you're working on a server, and have to move the file to a local machine before viewing it.
 
 Example diagnostic
 ^^^^^^^^^^^^^^^^^^

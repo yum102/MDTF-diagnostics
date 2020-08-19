@@ -1,27 +1,5 @@
-#!/usr/bin/env python
-
-# ======================================================================
-# NOAA Model Diagnotics Task Force (MDTF) Diagnostic Driver
-#
-# March 2019
-# Dani Coleman, NCAR
-# Chih-Chieh (Jack) Chen, NCAR, 
-# Yi-Hung Kuo, UCLA
-#
-# The MDTF code package and the participating PODs are distributed under
-# the LGPLv3 license (see LICENSE.txt).
-# ======================================================================
-
-from __future__ import absolute_import, division, print_function, unicode_literals
-import sys
-# do version check before importing other stuff
-if sys.version_info[0] == 2 and sys.version_info[1] < 7:
-    print(("ERROR: MDTF currently only supports python >= 2.7. Please check "
-    "which version is on your $PATH (e.g. with `which python`.)"))
-    print("Attempted to run with following python version:\n{}".format(sys.version))
-    exit()
-# passed; continue with imports
 import os
+import sys
 import signal
 import shutil
 import logging
@@ -45,32 +23,6 @@ class MDTFFramework(object):
         signal.signal(signal.SIGTERM, self.cleanup_tempdirs)
         signal.signal(signal.SIGINT, self.cleanup_tempdirs)
 
-        # poor man's subparser: argparse's subparser doesn't handle this
-        # use case easily, so just dispatch on first argument
-        if len(sys.argv) == 1 or \
-            len(sys.argv) == 2 and sys.argv[1].lower().endswith('help'):
-            # build CLI, print its help and exit
-            cli_obj = cli.FrameworkCLIHandler(code_root, defaults_rel_path)
-            cli_obj.parser.print_help()
-            exit()
-        elif sys.argv[1].lower() == 'info': 
-            # "subparser" for command-line info
-            cli.InfoCLIHandler(self.code_root, sys.argv[2:])
-        else:
-            # not printing help or info, setup CLI normally 
-            # move into its own function so that child classes can customize
-            # above options without having to rewrite below
-            self._framework_init(code_root, defaults_rel_path)
-
-    def cleanup_tempdirs(self, signum=None, frame=None):
-        # delete temp files
-        util.signal_logger(self.__class__.__name__, signum, frame)
-        config = util_mdtf.ConfigManager()
-        tmpdirs = util_mdtf.TempDirManager()
-        if not config.config.get('keep_temp', False):
-            tmpdirs.cleanup()
-
-    def _framework_init(self, code_root, defaults_rel_path):
         # set up CLI and parse arguments
         # print('\tDEBUG: argv = {}'.format(sys.argv[1:]))
         cli_obj = cli.FrameworkCLIHandler(code_root, defaults_rel_path)
@@ -86,6 +38,14 @@ class MDTFFramework(object):
         # config should be read-only from here on
         self._post_parse_hook(cli_obj, config)
         self._print_config(cli_obj, config)
+
+    def cleanup_tempdirs(self, signum=None, frame=None):
+        # delete temp files
+        util.signal_logger(self.__class__.__name__, signum, frame)
+        config = util_mdtf.ConfigManager()
+        tmpdirs = util_mdtf.TempDirManager()
+        if not config.config.get('keep_temp', False):
+            tmpdirs.cleanup()
 
     def _cli_pre_parse_hook(self, cli_obj):
         # gives subclasses the ability to customize CLI handler before parsing
@@ -276,6 +236,7 @@ class MDTFFramework(object):
         self.NetCDFHelper = _dispatch('netcdf_helper', 'NetcdfHelper')
 
     def main_loop(self):
+        _log.info("Starting MDTF run")
         config = util_mdtf.ConfigManager()
         self.manual_dispatch(config)
         caselist = []
@@ -307,21 +268,5 @@ class MDTFFramework(object):
         for case in caselist:
             case.tearDown()
         self.cleanup_tempdirs()
-
-
-# should move this out of 'framework' package, but need to create wrapper shell script
-# to set framework conda env.
-if __name__ == '__main__':
-    # get dir of currently executing script: 
-    cwd = os.path.dirname(os.path.realpath(__file__)) 
-    code_root, src_dir = os.path.split(cwd)
-    defaults_rel_path = os.path.join(src_dir, 'cli.jsonc')
-    if not os.path.exists(defaults_rel_path):
-        # print('Warning: site-specific cli.jsonc not found, using template.')
-        defaults_rel_path = os.path.join(src_dir, 'cli_template.jsonc')
-    mdtf = MDTFFramework(code_root, defaults_rel_path)
-    _log.info("Starting %s", __file__)
-    mdtf.main_loop()
-    _log.info("Exiting normally from %s", __file__)
-    config = util_mdtf.ConfigManager()
-    _log.info("Output written to %s", config.paths.OUTPUT_DIR)
+        _log.info("Exiting normally from MDTF run")
+        _log.info("Output written to %s", config.paths.OUTPUT_DIR)
