@@ -10,6 +10,7 @@ import glob
 import shutil
 import collections
 import json
+from . import funcs
 
 _log = logging.getLogger(__name__)
 
@@ -104,8 +105,8 @@ def find_files(src_dirs, filename_globs):
     Returns: :py:obj:`list` of paths to files matching any of the criteria.
         If no files are found, the list is empty.
     """
-    src_dirs = coerce_to_iter(src_dirs)
-    filename_globs = coerce_to_iter(filename_globs)
+    src_dirs = funcs.coerce_to_iter(src_dirs)
+    filename_globs = funcs.coerce_to_iter(filename_globs)
     files = set([])
     for d in src_dirs:
         for g in filename_globs:
@@ -136,7 +137,7 @@ def recursive_copy(src_files, src_root, dest_root, copy_function=None,
     """
     if copy_function is None:
         copy_function = shutil.copy2
-    src_files = coerce_to_iter(src_files)
+    src_files = funcs.coerce_to_iter(src_files)
     for f in src_files:
         if not f.startswith(src_root):
             raise ValueError('{} not a sub-path of {}'.format(f, src_root))
@@ -292,7 +293,7 @@ def bump_version(path, new_v=None, extra_dirs=[]):
     else:
         final_sep = ''
     dir_, file_ = os.path.split(path)
-    dir_list = util.coerce_to_iter(extra_dirs)
+    dir_list = funcs.coerce_to_iter(extra_dirs)
     dir_list.append(dir_)
     file_, old_v = _split_version(file_)
     if not old_v:

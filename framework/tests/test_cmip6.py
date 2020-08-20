@@ -2,7 +2,7 @@ import os
 import unittest
 from framework import cmip6
 from framework.cmip6 import CMIP6DateFrequency as dt_freq
-from tests.shared_test_utils import setUp_ConfigManager, tearDown_ConfigManager
+from framework.tests.shared_setup import setUp_ConfigManager, tearDown_ConfigManager
 
 # really incomplete! Do more systematically.
 #@unittest.skipIf(True,

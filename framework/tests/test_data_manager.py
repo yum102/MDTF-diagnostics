@@ -1,10 +1,10 @@
 import os
 import unittest
 import mock # define mock os.environ so we don't mess up real env vars
-from framework import util_mdtf
+from framework import configs
 from framework.diagnostic import Diagnostic
 from framework.data_manager import DataManager
-from tests.shared_test_utils import setUp_ConfigManager, tearDown_ConfigManager
+from framework.tests.shared_setup import setUp_ConfigManager, tearDown_ConfigManager
 
 @mock.patch.multiple(DataManager, __abstractmethods__=set())
 class TestDataManagerSetup(unittest.TestCase):
@@ -26,7 +26,7 @@ class TestDataManagerSetup(unittest.TestCase):
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     }
 
-    @mock.patch('framework.util_mdtf.util.read_json', return_value=dummy_var_translate)
+    @mock.patch('framework.configs.util.read_json', return_value=dummy_var_translate)
     def setUp(self, mock_read_json):
         setUp_ConfigManager(
             config=self.default_case, 
@@ -54,7 +54,7 @@ class TestDataManagerSetup(unittest.TestCase):
         self.assertEqual(os.environ['pr_var'], 'PRECT')
         self.assertEqual(os.environ['prc_var'], 'PRECC')
 
-    @mock.patch('framework.util_mdtf.check_required_dirs')
+    @mock.patch('framework.util.check_required_dirs')
     def test_set_model_env_vars_no_model(self, mock_check_required_dirs):
         # exit if can't find model
         case = DataManager(self.default_case)
@@ -101,7 +101,7 @@ class TestDataManagerSetupNonCFPod(unittest.TestCase):
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     }
 
-    @mock.patch('framework.util_mdtf.util.read_json', return_value=dummy_var_translate)
+    @mock.patch('framework.configs.util.read_json', return_value=dummy_var_translate)
     def setUp(self, mock_read_json):
         setUp_ConfigManager(
             config=self.default_case, 
@@ -148,7 +148,7 @@ class TestDataManagerFetchData(unittest.TestCase):
     def setUp(self, mock_read_json):
         # set up translation dictionary without calls to filesystem
         _ = configs.VariableTranslator(unittest = True)
-        _ = util_mdtf.PathManager(unittest = True)
+        _ = configs.PathManager(unittest = True)
 
     def tearDown(self):
         # call _reset method deleting clearing Translator for unit testing, 
@@ -156,7 +156,7 @@ class TestDataManagerFetchData(unittest.TestCase):
         # in the first test instead of being properly initialized
         temp = configs.VariableTranslator(unittest = True)
         temp._reset()
-        temp = util_mdtf.PathManager(unittest = True)
+        temp = configs.PathManager(unittest = True)
         temp._reset()
 
     # ---------------------------------------------------
