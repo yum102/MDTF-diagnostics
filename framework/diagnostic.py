@@ -2,9 +2,8 @@ import os
 import glob
 import logging
 import shutil
+from framework import configs, verify_links
 from framework import util
-from framework import util_mdtf
-from framework import verify_links
 
 _log = logging.getLogger(__name__)
 
@@ -53,7 +52,7 @@ class Diagnostic(object):
         Args:
             pod_name (:py:obj:`str`): Name of the POD to initialize.
         """
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         assert pod_name in config.pods
         # define attributes manually so linter doesn't complain
         # others are set in _parse_pod_settings
@@ -206,7 +205,7 @@ class Diagnostic(object):
         # Set env vars POD has inherited globally and from current case 
         # (set in DataManager._setup_pod).
         for key, val in iter(self.pod_env_vars.items()):
-            util_mdtf.setenv(key, val, self.pod_env_vars, overwrite=True) 
+            util.setenv(key, val, self.pod_env_vars, overwrite=True) 
 
         # Set env vars for variable and axis names:
         axes = dict()
@@ -241,12 +240,12 @@ class Diagnostic(object):
                                 envvar_name, axes[envvar_name], ax_name
                     ))
         for key, val in iter(axes.items()): 
-            util_mdtf.setenv(key, val, self.pod_env_vars)
+            util.setenv(key, val, self.pod_env_vars)
 
     def _setup_pod_directories(self):
         """Private method called by :meth:`~diagnostic.Diagnostic.setUp`.
         """
-        util_mdtf.check_required_dirs(
+        util.check_required_dirs(
             already_exist = [self.POD_CODE_DIR, self.POD_OBS_DATA], 
             create_if_nec = [self.POD_WK_DIR], 
         )
@@ -263,7 +262,7 @@ class Diagnostic(object):
             can't be found.
         """
         _log.debug("%s received POD settings: %s", self.name, self.__dict__)
-        programs = util_mdtf.get_available_programs()
+        programs = util.get_available_programs()
 
         if self.driver == '':  
             _log.warning("No valid driver entry found for %s", self.name)
@@ -438,7 +437,7 @@ class Diagnostic(object):
         POD_WK_DIR, respecting subdirectory structure (see doc for
         :func:`~util.recursive_copy`).
         """
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         template = config.global_envvars.copy()
         template.update(self.pod_env_vars)
         source_files = util.find_files(self.POD_CODE_DIR, '*.html')
@@ -446,7 +445,7 @@ class Diagnostic(object):
             source_files,
             self.POD_CODE_DIR,
             self.POD_WK_DIR,
-            copy_function=lambda mdtf, dest: util_mdtf.append_html_template(
+            copy_function=lambda mdtf, dest: util.append_html_template(
                 mdtf, dest, template_dict=template, append=False
             ),
             overwrite=True
@@ -474,7 +473,7 @@ class Diagnostic(object):
             # report error
             mdtf = os.path.join(src_dir, 'pod_error_snippet.html')
             template_dict['error_text'] = str(error)
-        util_mdtf.append_html_template(mdtf, self.TEMP_HTML, template_dict)
+        util.append_html_template(mdtf, self.TEMP_HTML, template_dict)
 
     def verify_pod_links(self):
         """Check for missing files linked to from POD's html page.
@@ -494,7 +493,7 @@ class Diagnostic(object):
             _log.error('%s', str(missing_out))
             template_dict = self.__dict__.copy()
             template_dict['missing_output'] = '<br>'.join(missing_out)
-            util_mdtf.append_html_template(
+            util.append_html_template(
                 os.path.join(self.code_root,'framework','html','pod_missing_snippet.html'),
                 self.TEMP_HTML, template_dict
             )
@@ -517,7 +516,7 @@ class Diagnostic(object):
             dest_subdir: Subdirectory tree of `POD_WK_DIR` to move converted 
                 bitmap files to.
         """
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         abs_src_subdir = os.path.join(self.POD_WK_DIR, src_subdir)
         abs_dest_subdir = os.path.join(self.POD_WK_DIR, dest_subdir)
         files = util.find_files(
@@ -568,10 +567,10 @@ class Diagnostic(object):
         digested observational data), 3) removes vector graphics if requested,
         4) removes netCDF scratch files in `POD_WK_DIR` if requested.
 
-        Settings are set at runtime, when :class:`~util_mdtf.ConfigManager` is 
+        Settings are set at runtime, when :class:`~configs.ConfigManager` is 
         initialized.
         """
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         # copy PDF documentation (if any) to output
         files = util.find_files(os.path.join(self.POD_CODE_DIR, 'doc'), '*.pdf')
         for f in files:

@@ -7,8 +7,8 @@ import atexit
 import signal
 from abc import ABCMeta, abstractmethod
 import subprocess
+from framework import configs
 from framework import util
-from framework import util_mdtf
 from framework.diagnostic import PodRequirementFailure
 
 _log = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ class EnvironmentManager(object, metaclass=ABCMeta):
     # analogue of TestSuite in xUnit - abstract base class
 
     def __init__(self):
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         self.test_mode = config.config.test_mode
         self.pods = []
         self.envs = set()
@@ -190,7 +190,7 @@ class VirtualenvEnvironmentManager(EnvironmentManager):
     def __init__(self):
         super(VirtualenvEnvironmentManager, self).__init__()
 
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         self.venv_root = config.paths.get('venv_root', '')
         self.r_lib_root = config.paths.get('r_lib_root', '')
 
@@ -280,7 +280,7 @@ class CondaEnvironmentManager(EnvironmentManager):
     def __init__(self):
         super(CondaEnvironmentManager, self).__init__()
 
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         self.code_root = config.paths.CODE_ROOT
         self.conda_dir = os.path.join(self.code_root, 'framework','conda')
         self.env_list = []

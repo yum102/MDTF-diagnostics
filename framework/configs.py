@@ -84,8 +84,10 @@ class _PathManager(util.NameSpace):
             # bump both WK_DIR and OUT_DIR to same version because name of 
             # former may be preserved when we copy to latter, depending on 
             # copy method
-            d.MODEL_WK_DIR, ver = bump_version(d.MODEL_WK_DIR, extra_dirs=[self.OUTPUT_DIR])
-            d.MODEL_OUT_DIR, _ = bump_version(d.MODEL_OUT_DIR, new_v=ver)
+            d.MODEL_WK_DIR, ver = util.bump_version(
+                d.MODEL_WK_DIR, extra_dirs=[self.OUTPUT_DIR]
+            )
+            d.MODEL_OUT_DIR, _ = util.bump_version(d.MODEL_OUT_DIR, new_v=ver)
         return d
 
     def pod_paths(self, pod, case):

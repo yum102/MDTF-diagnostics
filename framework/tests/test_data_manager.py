@@ -33,7 +33,7 @@ class TestDataManagerSetup(unittest.TestCase):
             paths=self.dummy_paths, 
             pods={'C': self.default_pod_CF}
         )
-        _ = util_mdtf.VariableTranslator(unittest = True)
+        _ = configs.VariableTranslator(unittest = True)
 
     def tearDown(self):
         tearDown_ConfigManager()
@@ -108,7 +108,7 @@ class TestDataManagerSetupNonCFPod(unittest.TestCase):
             paths=self.dummy_paths, 
             pods={'C': self.default_pod_not_CF}
         )
-        _ = util_mdtf.VariableTranslator(unittest = True)
+        _ = configs.VariableTranslator(unittest = True)
 
     def tearDown(self):
         tearDown_ConfigManager()
@@ -147,14 +147,14 @@ class TestDataManagerFetchData(unittest.TestCase):
             })
     def setUp(self, mock_read_json):
         # set up translation dictionary without calls to filesystem
-        _ = util_mdtf.VariableTranslator(unittest = True)
+        _ = configs.VariableTranslator(unittest = True)
         _ = util_mdtf.PathManager(unittest = True)
 
     def tearDown(self):
         # call _reset method deleting clearing Translator for unit testing, 
         # otherwise the second, third, .. tests will use the instance created 
         # in the first test instead of being properly initialized
-        temp = util_mdtf.VariableTranslator(unittest = True)
+        temp = configs.VariableTranslator(unittest = True)
         temp._reset()
         temp = util_mdtf.PathManager(unittest = True)
         temp._reset()

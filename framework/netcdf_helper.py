@@ -5,7 +5,6 @@ import shutil
 import subprocess
 from framework import datelabel
 from framework import util
-from framework import util_mdtf
 import xml.etree.ElementTree as ET
 
 _log = logging.getLogger(__name__)

@@ -1,9 +1,8 @@
 import os
 import re
 import logging
-from framework import datelabel
+from framework import configs, datelabel
 from framework import util
-from framework import util_mdtf
 
 _log = logging.getLogger(__name__)
 
@@ -14,7 +13,7 @@ class CMIP6_CVs(util.Singleton):
             # below with actual translation table to use for test
             file_ = 'dummy_filename'
         else:
-            config = util_mdtf.ConfigManager()
+            config = configs.ConfigManager()
             file_ = os.path.join(config.paths.CODE_ROOT, 'framework', 
                 'cmip6-cmor-tables','Tables','CMIP6_CV.json')
         self._contents = util.read_json(file_)

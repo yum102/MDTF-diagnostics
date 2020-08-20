@@ -8,11 +8,9 @@ from collections import defaultdict, namedtuple
 from itertools import chain
 from operator import attrgetter, itemgetter
 from abc import ABCMeta, abstractmethod, abstractproperty
-from framework import datelabel
+from framework import cmip6, configs, datelabel
 from framework import util
-from framework import util_mdtf
 import framework.conflict_resolution as choose
-from framework import cmip6
 from framework.data_manager import DataSet, DataManager, DataAccessError
 from framework.environment_manager import VirtualenvEnvironmentManager, CondaEnvironmentManager
 from framework.diagnostic import Diagnostic, PodRequirementFailure
@@ -113,7 +111,7 @@ class GfdlDiagnostic(Diagnostic):
         self._has_placeholder = False
 
     def setUp(self):
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         try:
             super(GfdlDiagnostic, self).setUp()
             make_remote_dir(
@@ -215,7 +213,7 @@ class GfdlarchiveDataManager(DataManager, metaclass=ABCMeta):
         modMgr = ModuleManager()
         modMgr.load('gcp') # should refactor
 
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         config.config.netcdf_helper = 'NcoNetcdfHelper' # HACK for now
         super(GfdlarchiveDataManager, self).__init__(case_dict, DateFreqMixin)
 
@@ -414,7 +412,7 @@ class GfdlarchiveDataManager(DataManager, metaclass=ABCMeta):
         if not os.path.exists(dest_dir):
             os.makedirs(dest_dir)
         # GCP can't copy to home dir, so always copy to temp
-        tmpdirs = util_mdtf.TempDirManager()
+        tmpdirs = configs.TempDirManager()
         work_dir = tmpdirs.make_tempdir(hash_obj = d_key)
         remote_files = sorted( # cast from set to list so we can go in chrono order
             list(self.data_files[d_key]), key=lambda ds: ds.date_range.start
@@ -599,7 +597,7 @@ class GfdlarchiveDataManager(DataManager, metaclass=ABCMeta):
     def _make_tar_file(self, tar_dest_dir):
         # make locally in WORKING_DIR and gcp to destination,
         # since OUTPUT_DIR might be mounted read-only
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         out_file = super(GfdlarchiveDataManager, self)._make_tar_file(
             config.paths.WORKING_DIR
         )
@@ -659,9 +657,9 @@ class GfdlarchiveDataManager(DataManager, metaclass=ABCMeta):
                 if os.path.exists(self.MODEL_OUT_DIR):
                     # check again, since rmtree() might have succeeded
                     self.MODEL_OUT_DIR, version = \
-                        util_mdtf.bump_version(self.MODEL_OUT_DIR)
+                        util.bump_version(self.MODEL_OUT_DIR)
                     new_wkdir, _ = \
-                        util_mdtf.bump_version(self.MODEL_WK_DIR, new_v=version)
+                        util.bump_version(self.MODEL_WK_DIR, new_v=version)
                     _log.info("Move %s to %s", self.MODEL_WK_DIR, new_wkdir)
                     shutil.move(self.MODEL_WK_DIR, new_wkdir)
                     self.MODEL_WK_DIR = new_wkdir
@@ -918,8 +916,8 @@ def make_remote_dir(dest_dir, timeout=None, dry_run=None):
         # use GCP for this because output dir might be on a read-only filesystem.
         # apparently trying to test this with os.access is less robust than 
         # just catching the error
-        config = util_mdtf.ConfigManager()
-        tmpdirs = util_mdtf.TempDirManager()
+        config = configs.ConfigManager()
+        tmpdirs = configs.TempDirManager()
         work_dir = tmpdirs.make_tempdir()
         if timeout is None:
             timeout = config.config.get('file_transfer_timeout', 0)

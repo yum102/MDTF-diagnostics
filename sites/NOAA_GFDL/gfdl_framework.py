@@ -12,18 +12,15 @@ import os
 import shutil
 import tempfile
 import logging
-from framework import util
-from framework import util_mdtf
-from framework import mdtf
-from framework import data_manager
-from framework import environment_manager
-from framework import diagnostic
-from framework import netcdf_helper
+from framework import (
+    configs, framework, data_manager, environment_manager, diagnostic, 
+    netcdf_helper, util
+)
 from sites.NOAA_GFDL import gfdl
 
 _log = logging.getLogger(__name__)
 
-class GFDLMDTFFramework(mdtf.MDTFFramework):
+class GFDLMDTFFramework(framework.MDTFFramework):
     # add gfdl to search path for DataMgr, EnvMgr
     _dispatch_search = [
         data_manager, environment_manager, diagnostic, netcdf_helper, gfdl
@@ -70,7 +67,7 @@ class GFDLMDTFFramework(mdtf.MDTFFramework):
             (config.config.get('keep_temp', False) \
             or config.paths.WORKING_DIR == config.paths.OUTPUT_DIR):
             shutil.rmtree(config.paths.WORKING_DIR)
-        util_mdtf.check_required_dirs(
+        util.check_required_dirs(
             already_exist = [
                 config.paths.CODE_ROOT, config.paths.OBS_DATA_REMOTE
             ], 
@@ -146,5 +143,5 @@ if __name__ == '__main__':
     _log.info("Starting %s", __file__)
     mdtf.main_loop()
     _log.info("Exiting normally from %s", __file__)
-    config = util_mdtf.ConfigManager()
+    config = configs.ConfigManager()
     _log.info("Output written to %s", config.paths.OUTPUT_DIR)

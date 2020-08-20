@@ -29,7 +29,7 @@ class TestDiagnosticInit(unittest.TestCase):
             paths=self.dummy_paths, 
             pods={'DUMMY_POD': self.default_pod_CF}
         )
-        _ = util_mdtf.VariableTranslator(unittest = True)
+        _ = configs.VariableTranslator(unittest = True)
 
     def tearDown(self):
         tearDown_ConfigManager()
@@ -38,7 +38,7 @@ class TestDiagnosticInit(unittest.TestCase):
 
     def test_parse_pod_settings(self):
         # normal operation
-        config = util_mdtf.ConfigManager(unittest=True)
+        config = configs.ConfigManager(unittest=True)
         config.pods['DUMMY_POD'] = {'settings':{'required_programs':'B'},'varlist':[]}
         pod = Diagnostic('DUMMY_POD')
         self.assertEqual(pod.name, 'DUMMY_POD')
@@ -46,7 +46,7 @@ class TestDiagnosticInit(unittest.TestCase):
 
     def test_parse_pod_varlist(self):
         # normal operation
-        config = util_mdtf.ConfigManager(unittest=True)
+        config = configs.ConfigManager(unittest=True)
         config.pods['DUMMY_POD'] = {
         'settings':{},'varlist':[{
                 'var_name': 'pr_var', 'freq':'mon', 'requirement':'required'
@@ -57,7 +57,7 @@ class TestDiagnosticInit(unittest.TestCase):
 
     def test_parse_pod_varlist_defaults(self):
         # fill in defaults
-        config = util_mdtf.ConfigManager(unittest=True)
+        config = configs.ConfigManager(unittest=True)
         config.pods['DUMMY_POD'] = {
         'settings':{},'varlist':[{
                 'var_name': 'pr_var', 'freq':'mon', 'alternates':'foo'
@@ -74,7 +74,7 @@ class TestDiagnosticInit(unittest.TestCase):
         # self.assertDictEqual(pod.varlist[0]['alternates'][0].__dict__, test_ds.__dict__)
 
     def test_parse_pod_varlist_freq(self):
-        config = util_mdtf.ConfigManager(unittest=True)
+        config = configs.ConfigManager(unittest=True)
         config.pods['DUMMY_POD'] = {
         'settings':{},'varlist':[{
                 'var_name': 'pr_var', 'freq':'not_a_frequency'
@@ -106,7 +106,7 @@ class TestDiagnosticSetUp(unittest.TestCase):
             paths=self.dummy_paths, 
             pods={'DUMMY_POD': self.default_pod}
         )
-        _ = util_mdtf.VariableTranslator(unittest = True)
+        _ = configs.VariableTranslator(unittest = True)
 
     def tearDown(self):
         tearDown_ConfigManager()
@@ -186,7 +186,7 @@ class TestDiagnosticCheckVarlist(unittest.TestCase):
             paths=self.dummy_paths, 
             pods={'DUMMY_POD': self.default_pod}
         )
-        _ = util_mdtf.VariableTranslator(unittest = True)
+        _ = configs.VariableTranslator(unittest = True)
 
     def tearDown(self):
         tearDown_ConfigManager()
@@ -195,8 +195,8 @@ class TestDiagnosticCheckVarlist(unittest.TestCase):
 
     def _populate_pod__local_data(self, pod):
         # reproduce logic in DataManager._setup_pod rather than invoke it here
-        config = util_mdtf.ConfigManager(unittest = True)
-        translate = util_mdtf.VariableTranslator(unittest = True)
+        config = configs.ConfigManager(unittest = True)
+        translate = configs.VariableTranslator(unittest = True)
         case_name = 'A'
 
         ds_list = []
@@ -217,7 +217,7 @@ class TestDiagnosticCheckVarlist(unittest.TestCase):
     @mock.patch('os.path.isfile', return_value = True)
     def test_check_for_varlist_files_found(self, mock_isfile):
         # case file is found
-        config = util_mdtf.ConfigManager(unittest=True)
+        config = configs.ConfigManager(unittest=True)
         config.pods['DUMMY_POD'] = {
         'settings':{}, 'varlist':[
             {'var_name': 'pr_var', 'freq':'mon'}
@@ -231,7 +231,7 @@ class TestDiagnosticCheckVarlist(unittest.TestCase):
     @mock.patch('os.path.isfile', return_value = False)
     def test_check_for_varlist_files_not_found(self, mock_isfile):
         # case file is required and not found
-        config = util_mdtf.ConfigManager(unittest=True)
+        config = configs.ConfigManager(unittest=True)
         config.pods['DUMMY_POD'] = {
         'settings':{}, 'varlist':[
             {'var_name': 'pr_var', 'freq':'mon', 'required': True}
@@ -245,7 +245,7 @@ class TestDiagnosticCheckVarlist(unittest.TestCase):
     @mock.patch('os.path.isfile', side_effect = [False, True])
     def test_check_for_varlist_files_optional(self, mock_isfile):
         # case file is optional and not found
-        config = util_mdtf.ConfigManager(unittest=True)
+        config = configs.ConfigManager(unittest=True)
         config.pods['DUMMY_POD'] = {
         'settings':{}, 'varlist':[
             {'var_name': 'pr_var', 'freq':'mon', 'required': False}
@@ -259,7 +259,7 @@ class TestDiagnosticCheckVarlist(unittest.TestCase):
     @mock.patch('os.path.isfile', side_effect = [False, True])
     def test_check_for_varlist_files_alternate(self, mock_isfile):
         # case alternate variable is specified and found
-        config = util_mdtf.ConfigManager(unittest=True)
+        config = configs.ConfigManager(unittest=True)
         config.pods['DUMMY_POD'] = {
         'settings':{}, 'varlist':[
             {'var_name': 'pr_var', 'freq':'mon', 
@@ -291,7 +291,7 @@ class TestDiagnosticSetUpCustomSettings(unittest.TestCase):
             paths=self.dummy_paths, 
             pods={'DUMMY_POD': self.default_pod}
         )
-        _ = util_mdtf.VariableTranslator(unittest = True)
+        _ = configs.VariableTranslator(unittest = True)
 
     def tearDown(self):
         tearDown_ConfigManager()
@@ -301,7 +301,7 @@ class TestDiagnosticSetUpCustomSettings(unittest.TestCase):
     @mock.patch('os.path.exists', return_value = True)
     def test_set_pod_env_vars_vars(self, mock_exists):
         # check definition of additional env vars
-        config = util_mdtf.ConfigManager(unittest=True)
+        config = configs.ConfigManager(unittest=True)
         config.pods['DUMMY_POD'] = {
             'settings':{'pod_env_vars':{'D':'E'}}, 'varlist':[]
         }
@@ -315,7 +315,7 @@ class TestDiagnosticSetUpCustomSettings(unittest.TestCase):
     @mock.patch('os.path.exists', return_value = True)
     def test_check_pod_driver_program(self, mock_exists):
         # fill in absolute path and fill in program from driver's extension
-        config = util_mdtf.ConfigManager(unittest=True)
+        config = configs.ConfigManager(unittest=True)
         config.pods['DUMMY_POD'] = {
             'settings':{'driver':'C.ncl'}, 'varlist':[]
         }
@@ -327,7 +327,7 @@ class TestDiagnosticSetUpCustomSettings(unittest.TestCase):
     @mock.patch('os.path.exists', return_value = True)
     def test_check_pod_driver_no_program_1(self, mock_exists):
         # assertion fail if can't recognize driver's extension
-        config = util_mdtf.ConfigManager(unittest=True)
+        config = configs.ConfigManager(unittest=True)
         config.pods['DUMMY_POD'] = {
             'settings':{'driver':'C.foo'}, 'varlist':[]
         }
@@ -353,7 +353,7 @@ class TestDiagnosticTearDown(unittest.TestCase):
             paths=self.dummy_paths, 
             pods={'DUMMY_POD': self.default_pod}
         )
-        _ = util_mdtf.VariableTranslator(unittest = True)
+        _ = configs.VariableTranslator(unittest = True)
 
     def tearDown(self):
         tearDown_ConfigManager()
@@ -393,7 +393,7 @@ class TestDiagnosticTearDown(unittest.TestCase):
     @mock.patch('subprocess.Popen')
     def test_convert_pod_figures(self, mock_subprocess, mock_glob):
         # assert we munged filenames correctly
-        config = util_mdtf.ConfigManager(unittest=True)
+        config = configs.ConfigManager(unittest=True)
         pod = Diagnostic('DUMMY_POD') 
         pod.POD_WK_DIR = 'A'  
         pod._convert_pod_figures(config)

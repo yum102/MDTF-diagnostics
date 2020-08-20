@@ -178,7 +178,7 @@ class TestVariableTranslator(unittest.TestCase):
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     })
     def test_variabletranslator(self, mock_read_json):
-        temp = util_mdtf.VariableTranslator(unittest = True)
+        temp = configs.VariableTranslator(unittest = True)
         self.assertEqual(temp.toCF('not_CF', 'PRECT'), 'pr_var')
         self.assertEqual(temp.fromCF('not_CF', 'pr_var'), 'PRECT')
 
@@ -187,7 +187,7 @@ class TestVariableTranslator(unittest.TestCase):
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     })
     def test_variabletranslator_cf(self, mock_read_json):
-        temp = util_mdtf.VariableTranslator(unittest = True)
+        temp = configs.VariableTranslator(unittest = True)
         self.assertEqual(temp.toCF('CF', 'pr_var'), 'pr_var')
         self.assertEqual(temp.fromCF('CF', 'pr_var'), 'pr_var')
 
@@ -196,7 +196,7 @@ class TestVariableTranslator(unittest.TestCase):
         'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
     })
     def test_variabletranslator_no_key(self, mock_read_json):
-        temp = util_mdtf.VariableTranslator(unittest = True)
+        temp = configs.VariableTranslator(unittest = True)
         self.assertRaises(AssertionError, temp.toCF, 'B', 'PRECT')
         self.assertRaises(KeyError, temp.toCF, 'not_CF', 'nonexistent_var')
         self.assertRaises(AssertionError, temp.fromCF, 'B', 'PRECT')
@@ -215,7 +215,7 @@ class TestVariableTranslatorReadFiles(unittest.TestCase):
     })
     def test_read_model_varnames(self, mock_read_json):
         # normal operation - convert string to list
-        temp = util_mdtf.VariableTranslator(unittest = True)
+        temp = configs.VariableTranslator(unittest = True)
         self.assertEqual(temp.fromCF('A','B'), 'D')
         temp._reset()
 
@@ -224,7 +224,7 @@ class TestVariableTranslatorReadFiles(unittest.TestCase):
     })
     def test_read_model_varnames_multiple(self, mock_read_json):
         # create multiple entries when multiple models specified
-        temp = util_mdtf.VariableTranslator(unittest = True)
+        temp = configs.VariableTranslator(unittest = True)
         self.assertEqual(temp.fromCF('A','B'), 'D')
         self.assertEqual(temp.fromCF('C','B'), 'D')
         temp._reset()
@@ -245,7 +245,7 @@ class TestPathManager(unittest.TestCase):
 
     @unittest.skip("")
     def test_pathmgr_global(self):
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         self.assertEqual(config.paths.CODE_ROOT, 'A')
         self.assertEqual(config.paths.OUTPUT_DIR, 'E')
 
@@ -255,13 +255,13 @@ class TestPathManager(unittest.TestCase):
             'OBS_DATA_ROOT':'B', 'MODEL_DATA_ROOT':'C',
             'WORKING_DIR':'D', 'OUTPUT_DIR':'E'
         }
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         self.assertRaises(AssertionError, config.paths.parse, d, list(d.keys()))
         # initialize successfully so that tearDown doesn't break
         #_ = util_mdtf.PathManager(unittest = True) 
 
     def test_pathmgr_global_testmode(self):
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         self.assertEqual(config.paths.CODE_ROOT, 'TEST_CODE_ROOT')
         self.assertEqual(config.paths.OUTPUT_DIR, 'TEST_OUTPUT_DIR')
 
@@ -291,14 +291,14 @@ class TestPathManagerPodCase(unittest.TestCase):
         tearDown_ConfigManager()
 
     def test_pathmgr_model(self):
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         case = DataManager(self.case_dict)
         d = config.paths.model_paths(case)
         self.assertEqual(d['MODEL_DATA_DIR'], 'TEST_MODEL_DATA_ROOT/A')
         self.assertEqual(d['MODEL_WK_DIR'], 'TEST_WORKING_DIR/MDTF_A_1900_2100')
 
     def test_pathmgr_pod(self):
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         case = DataManager(self.case_dict)
         pod = Diagnostic('AA')
         d = config.paths.pod_paths(pod, case)

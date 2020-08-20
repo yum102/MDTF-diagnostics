@@ -7,12 +7,10 @@ from collections import defaultdict, namedtuple
 from itertools import chain
 from operator import attrgetter
 from abc import ABCMeta, abstractmethod
-import datetime
+import datetime 
 from subprocess import CalledProcessError
+from framework import configs, datelabel, netcdf_helper
 from framework import util
-from framework import util_mdtf
-from framework import datelabel
-from framework import netcdf_helper
 from framework.diagnostic import PodRequirementFailure
 
 _log = logging.getLogger(__name__)
@@ -84,7 +82,7 @@ class DataSet(util.NameSpace):
 
     @classmethod
     def from_pod_varlist(cls, pod_convention, var, dm_args):
-        translate = util_mdtf.VariableTranslator()
+        translate = configs.VariableTranslator()
         var_copy = var.copy()
         var_copy.update(dm_args)
         ds = cls(**var_copy)
@@ -135,7 +133,7 @@ class DataManager(object, metaclass=ABCMeta):
         self.pod_list = case_dict['pod_list'] 
         self.pods = []
 
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         self.envvars = config.global_envvars.copy() # gets appended to
         # assign explicitly else linter complains
         self.dry_run = config.config.dry_run
@@ -181,7 +179,7 @@ class DataManager(object, metaclass=ABCMeta):
     # -------------------------------------
 
     def setUp(self):
-        util_mdtf.check_required_dirs(
+        util.check_required_dirs(
             already_exist =[], 
             create_if_nec = [self.MODEL_WK_DIR, self.MODEL_DATA_DIR], 
         )
@@ -194,24 +192,24 @@ class DataManager(object, metaclass=ABCMeta):
             "LASTYR": self.lastyr.format(precision=1)
         })
         # set env vars for unit conversion factors (TODO: honest unit conversion)
-        translate = util_mdtf.VariableTranslator()
+        translate = configs.VariableTranslator()
         if self.convention not in translate.units:
             raise AssertionError(("Variable name translation doesn't recognize "
                 "{}.").format(self.convention))
         temp = translate.variables[self.convention].to_dict()
         for key, val in iter(temp.items()):
-            util_mdtf.setenv(key, val, self.envvars)
+            util.setenv(key, val, self.envvars)
         temp = translate.units[self.convention].to_dict()
         for key, val in iter(temp.items()):
-            util_mdtf.setenv(key, val, self.envvars)
+            util.setenv(key, val, self.envvars)
 
         for pod in self.iter_pods():
             self._setup_pod(pod)
         self._build_data_dicts()
 
     def _setup_pod(self, pod):
-        config = util_mdtf.ConfigManager()
-        translate = util_mdtf.VariableTranslator()
+        config = configs.ConfigManager()
+        translate = configs.VariableTranslator()
 
         # transfer DataManager-specific settings
         pod.__dict__.update(config.paths.pod_paths(pod, self))
@@ -450,7 +448,7 @@ class DataManager(object, metaclass=ABCMeta):
 
     def tearDown(self):
         # TODO: handle OSErrors in all of these
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         self._make_html()
         _ = self._backup_config_file(config)
         if self.make_variab_tar:
@@ -467,11 +465,11 @@ class DataManager(object, metaclass=ABCMeta):
         template_dict = self.envvars.copy()
         template_dict['DATE_TIME'] = \
             datetime.datetime.utcnow().strftime("%A, %d %B %Y %I:%M%p (UTC)")
-        util_mdtf.append_html_template(
+        util.append_html_template(
             os.path.join(src_dir, 'mdtf_header.html'), dest, template_dict
         )
-        util_mdtf.append_html_template(self.TEMP_HTML, dest, {})
-        util_mdtf.append_html_template(
+        util.append_html_template(self.TEMP_HTML, dest, {})
+        util.append_html_template(
             os.path.join(src_dir, 'mdtf_footer.html'), dest, template_dict
         )
         if cleanup:
@@ -486,7 +484,7 @@ class DataManager(object, metaclass=ABCMeta):
         """
         out_file = os.path.join(self.MODEL_WK_DIR, 'config_save.json')
         if not self.file_overwrite:
-            out_file, _ = util_mdtf.bump_version(out_file)
+            out_file, _ = util.bump_version(out_file)
         elif os.path.exists(out_file):
             _log.info("Overwriting %s.", out_file)
         util.write_json(config.config.toDict(), out_file)
@@ -497,7 +495,7 @@ class DataManager(object, metaclass=ABCMeta):
         """
         out_file = os.path.join(tar_dest_dir, self.MODEL_WK_DIR+'.tar')
         if not self.file_overwrite:
-            out_file, _ = util_mdtf.bump_version(out_file)
+            out_file, _ = util.bump_version(out_file)
             _log.info("Creating %s.", out_file)
         elif os.path.exists(out_file):
             _log.info("Overwriting %s.", out_file)
