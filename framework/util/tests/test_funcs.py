@@ -1,7 +1,7 @@
 import os
 import unittest
 import mock # define mock os.environ so we don't mess up real env vars
-from framework import util
+from framework.util import funcs
 
 class TestBasicClasses(unittest.TestCase):
     def test_singleton(self):
@@ -126,113 +126,6 @@ class TestBasicClasses(unittest.TestCase):
         self.assertIn(test, set_test)
         self.assertIn(test4, set_test)
 
-
-class TestUtil(unittest.TestCase):
-    def test_parse_json_basic(self):
-        s = """{
-            "a" : "test_string",
-            "b" : 3,
-            "c" : false,
-            "d" : [1,2,3],
-            "e" : {
-                "aa" : [4,5,6],
-                "bb" : true
-            }
-        }
-        """
-        d = util.parse_json(s)
-        self.assertEqual(set(d.keys()), set(['a','b','c','d','e']))
-        self.assertEqual(d['a'], "test_string")
-        self.assertEqual(d['b'], 3)
-        self.assertEqual(d['c'], False)
-        self.assertEqual(len(d['d']), 3)
-        self.assertEqual(d['d'], [1,2,3])
-        self.assertEqual(set(d['e'].keys()), set(['aa','bb']))
-        self.assertEqual(len(d['e']['aa']), 3)
-        self.assertEqual(d['e']['aa'], [4,5,6])
-        self.assertEqual(d['e']['bb'], True)
-
-    def test_parse_json_comments(self):
-        s = """
-        // comment 1
-        // comment 1.1 // comment 1.2 // comment 1.3
-
-        { // comment 1.5
-            // comment 2
-            "a" : 1, // comment 3
-
-            "b // c" : "// d x ////", // comment 4
-            "e" : false,
-            // comment 5 "quotes in a comment"
-            "f": "ff" // comment 6 " unbalanced quote in a comment
-        } // comment 7
-
-        """
-        d = util.parse_json(s)
-        self.assertEqual(set(d.keys()), set(['a','b // c','e','f']))
-        self.assertEqual(d['a'], 1)
-        self.assertEqual(d['b // c'], "// d x ////")
-        self.assertEqual(d['e'], False)
-        self.assertEqual(d['f'], "ff")
-
-    def test_write_json(self):
-        pass
-
-# ---------------------------------------------------
-class TestSubprocessInteraction(unittest.TestCase):
-    def test_run_shell_commands_stdout1(self):
-        input = 'echo "foo"'
-        out = processes.run_shell_command(input)
-        self.assertEqual(len(out), 1)
-        self.assertEqual(out[0], 'foo')
-
-    def test_run_shell_commands_stdout2(self):
-        input = 'echo "foo" && echo "bar"'
-        out = processes.run_shell_command(input)
-        self.assertEqual(len(out), 2)
-        self.assertEqual(out[0], 'foo')
-        self.assertEqual(out[1], 'bar')
-        
-    def test_run_shell_commands_exitcode(self):
-        input = 'echo "foo"; false'
-        with self.assertRaises(Exception):
-            # I couldn't get this to catch CalledProcessError specifically,
-            # maybe because it takes args?
-            processes.run_shell_command(input)
-
-    def test_run_shell_commands_envvars(self):
-        input = 'echo $FOO; export FOO="baz"; echo $FOO'
-        out = processes.run_shell_command(input, env={'FOO':'bar'})
-        self.assertEqual(len(out), 2)
-        self.assertEqual(out[0], 'bar')
-        self.assertEqual(out[1], 'baz')
-
-    @unittest.skip("Skipping poll_command tests")
-    def test_poll_command_shell_true(self):
-        rc = util.poll_command('echo "foo"', shell=True)
-        self.assertEqual(rc, 0)
-
-    @unittest.skip("Skipping poll_command tests")
-    def test_poll_command_shell_false(self):
-        rc = util.poll_command(['echo', 'foo'], shell=False)
-        self.assertEqual(rc, 0)
-    
-    @unittest.skip("Skipping poll_command tests")
-    def test_poll_command_error(self):
-        rc = util.poll_command(['false'], shell=False)
-        self.assertEqual(rc, 1)
-
-    def test_run_command_stdout1(self):
-        out = util.run_command(['echo', '"foo"'])
-        self.assertEqual(len(out), 1)
-        self.assertEqual(out[0], '"foo"')
-
-    def test_run_command_exitcode(self):
-        input = ['exit', '1']
-        with self.assertRaises(Exception):
-            # I couldn't get this to catch CalledProcessError specifically,
-            # maybe because it takes args?
-            util.run_command(input)
 
 # ---------------------------------------------------
 
