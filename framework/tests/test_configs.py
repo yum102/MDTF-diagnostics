@@ -3,7 +3,7 @@ import unittest
 from collections import namedtuple
 import itertools
 import shutil
-import mock # define mock os.environ so we don't mess up real env vars
+import unittest.mock as mock # define mock os.environ so we don't mess up real env vars
 from framework import configs
 from framework.data_manager import DataManager
 from framework.diagnostic import Diagnostic
