@@ -5,263 +5,13 @@ import os
 import io
 import re
 import logging
-import shlex
+import string
 import glob
 import shutil
 import collections
-import collections.abc
-from distutils.spawn import find_executable
-import subprocess
-import signal
-import threading
-import errno
 import json
 
 _log = logging.getLogger(__name__)
-
-class _Singleton(type):
-    """Private metaclass that creates a :class:`~util.Singleton` base class when
-    called. This version is copied from `<https://stackoverflow.com/a/6798042>`__ and
-    should be compatible with both Python 2 and 3.
-    """
-    _instances = {}
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(_Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-class Singleton(_Singleton('SingletonMeta', (object,), {})): 
-    """Parent class defining the 
-    `Singleton <https://en.wikipedia.org/wiki/Singleton_pattern>`_ pattern. We
-    use this as safer way to pass around global state. See 
-    `<https://stackoverflow.com/a/6798042>`__.
-    """
-    @classmethod
-    def _reset(cls):
-        """Private method of all :class:`~util.Singleton`-derived classes added
-        for use in unit testing only. Calling this method on test teardown 
-        deletes the instance, so that tests coming afterward will initialize the 
-        :class:`~util.Singleton` correctly, instead of getting the state set 
-        during previous tests.
-        """
-        # pylint: disable=maybe-no-member
-        if cls in cls._instances:
-            del cls._instances[cls]
-
-
-class ExceptionPropagatingThread(threading.Thread):
-    """Class to propagate exceptions raised in a child thread back to the caller
-    thread when the child is join()ed. 
-    Adapted from `<https://stackoverflow.com/a/31614591>`__.
-    """
-    def run(self):
-        self.ret = None
-        self.exc = None
-        try:
-            if hasattr(self, '_Thread__target'):
-                # Thread uses name mangling prior to Python 3.
-                self.ret = self._Thread__target(*self._Thread__args, **self._Thread__kwargs)
-            else:
-                self.ret = self._target(*self._args, **self._kwargs)
-        except BaseException as e:
-            self.exc = e
-
-    def join(self, timeout=None):
-        super(ExceptionPropagatingThread, self).join(timeout)
-        if self.exc:
-            raise self.exc
-        return self.ret
-
-
-class MultiMap(collections.defaultdict):
-    """Extension of the :obj:`dict` class that allows doing dictionary lookups 
-    from either keys or values. 
-    
-    Syntax for lookup from keys is unchanged, ``bd['key'] = 'val'``, while lookup
-    from values is done on the `inverse` attribute and returns a set of matching
-    keys if more than one match is present: ``bd.inverse['val'] = ['key1', 'key2']``.    
-    See `<https://stackoverflow.com/a/21894086>`__.
-    """
-    def __init__(self, *args, **kwargs):
-        """Initialize :class:`~util.MultiMap` by passing an ordinary :py:obj:`dict`.
-        """
-        super(MultiMap, self).__init__(set, *args, **kwargs)
-        for key in iter(self.keys()):
-            super(MultiMap, self).__setitem__(key, coerce_to_iter(self[key], set))
-
-    def __setitem__(self, key, value):
-        super(MultiMap, self).__setitem__(key, coerce_to_iter(value, set))
-
-    def get_(self, key):
-        if key not in list(self.keys()):
-            raise KeyError(key)
-        return coerce_from_iter(self[key])
-    
-    def to_dict(self):
-        d = {}
-        for key in iter(self.keys()):
-            d[key] = self.get_(key)
-        return d
-
-    def inverse(self):
-        d = collections.defaultdict(set)
-        for key, val_set in iter(self.items()):
-            for v in val_set:
-                d[v].add(key)
-        return dict(d)
-
-    def inverse_get_(self, val):
-        # don't raise keyerror if empty; could be appropriate result
-        inv_lookup = self.inverse()
-        return coerce_from_iter(inv_lookup[val])
-
-
-class NameSpace(dict):
-    """ A dictionary that provides attribute-style access.
-
-    For example, `d['key'] = value` becomes `d.key = value`. All methods of 
-    :py:obj:`dict` are supported.
-
-    Note: recursive access (`d.key.subkey`, as in C-style languages) is not
-        supported.
-
-    Implementation is based on `<https://github.com/Infinidat/munch>`__.
-    """
-
-    # only called if k not found in normal places
-    def __getattr__(self, k):
-        """ Gets key if it exists, otherwise throws AttributeError.
-            nb. __getattr__ is only called if key is not found in normal places.
-        """
-        try:
-            # Throws exception if not in prototype chain
-            return object.__getattribute__(self, k)
-        except AttributeError:
-            try:
-                return self[k]
-            except KeyError:
-                raise AttributeError(k)
-
-    def __setattr__(self, k, v):
-        """ Sets attribute k if it exists, otherwise sets key k. A KeyError
-            raised by set-item (only likely if you subclass NameSpace) will
-            propagate as an AttributeError instead.
-        """
-        try:
-            # Throws exception if not in prototype chain
-            object.__getattribute__(self, k)
-        except AttributeError:
-            try:
-                self[k] = v
-            except:
-                raise AttributeError(k)
-        else:
-            object.__setattr__(self, k, v)
-
-    def __delattr__(self, k):
-        """ Deletes attribute k if it exists, otherwise deletes key k. A KeyError
-            raised by deleting the key--such as when the key is missing--will
-            propagate as an AttributeError instead.
-        """
-        try:
-            # Throws exception if not in prototype chain
-            object.__getattribute__(self, k)
-        except AttributeError:
-            try:
-                del self[k]
-            except KeyError:
-                raise AttributeError(k)
-        else:
-            object.__delattr__(self, k)
-
-    def __dir__(self):
-        return list(self.keys())
-    __members__ = __dir__  # for python2.x compatibility
-
-    def __repr__(self):
-        """ Invertible* string-form of a Munch.
-            (*) Invertible so long as collection contents are each repr-invertible.
-        """
-        return '{0}({1})'.format(self.__class__.__name__, dict.__repr__(self))
-
-    def __getstate__(self):
-        """ Implement a serializable interface used for pickling.
-        See `<https://docs.python.org/3.6/library/pickle.html>`__.
-        """
-        return {k: v for k, v in iter(self.items())}
-
-    def __setstate__(self, state):
-        """ Implement a serializable interface used for pickling.
-        See `<https://docs.python.org/3.6/library/pickle.html>`__.
-        """
-        self.clear()
-        self.update(state)
-
-    def toDict(self):
-        """ Recursively converts a NameSpace back into a dictionary.
-        """
-        return type(self)._toDict(self)
-
-    @classmethod
-    def _toDict(cls, x):
-        """ Recursively converts a NameSpace back into a dictionary.
-            nb. As dicts are not hashable, they cannot be nested in sets/frozensets.
-        """
-        if isinstance(x, dict):
-            return dict((k, cls._toDict(v)) for k, v in iter(x.items()))
-        elif isinstance(x, (list, tuple)):
-            return type(x)(cls._toDict(v) for v in x)
-        else:
-            return x
-
-    @property
-    def __dict__(self):
-        return self.toDict()
-
-    @classmethod
-    def fromDict(cls, x):
-        """ Recursively transforms a dictionary into a NameSpace via copy.
-            nb. As dicts are not hashable, they cannot be nested in sets/frozensets.
-        """
-        if isinstance(x, dict):
-            return cls((k, cls.fromDict(v)) for k, v in iter(x.items()))
-        elif isinstance(x, (list, tuple)):
-            return type(x)(cls.fromDict(v) for v in x)
-        else:
-            return x
-
-    def copy(self):
-        return type(self).fromDict(self)
-    __copy__ = copy
-
-    def _freeze(self):
-        """Return immutable representation of (current) attributes.
-
-        We do this to enable comparison of two Namespaces, which otherwise would 
-        be done by the default method of testing if the two objects refer to the
-        same location in memory.
-        See `<https://stackoverflow.com/a/45170549>`__.
-        """
-        d = self.toDict()
-        d2 = {k: repr(d[k]) for k in d}
-        FrozenNameSpace = collections.namedtuple(
-            'FrozenNameSpace', sorted(list(d.keys()))
-        )
-        return FrozenNameSpace(**d2)
-
-    def __eq__(self, other):
-        if type(other) is type(self):
-            return (self._freeze() == other._freeze())
-        else:
-            return False
-
-    def __ne__(self, other):
-        return (not self.__eq__(other)) # more foolproof
-
-    def __hash__(self):
-        return hash(self._freeze())
-
-# ------------------------------------
 
 def strip_comments(str_, delimiter=None):
     # would be better to use shlex, but that doesn't support multi-character
@@ -441,233 +191,203 @@ def resolve_path(path, root_path="", env=None):
     assert os.path.isabs(root_path)
     return os.path.normpath(os.path.join(root_path, path))
 
-def check_executable(exec_name):
-    """Tests if <exec_name> is found on the current $PATH.
+def get_available_programs():
+    return {'py': 'python', 'ncl': 'ncl', 'R': 'Rscript'}
+    #return {'py': sys.executable, 'ncl': 'ncl'}  
+
+def setenv(varname, varvalue, env_dict, overwrite=True):
+    """Wrapper to set environment variables.
 
     Args:
-        exec_name (:py:obj:`str`): Name of the executable to search for.
-
-    Returns: :py:obj:`bool` True/false if executable was found on $PATH.
+        varname (:obj:`str`): Variable name to define
+        varvalue: Value to assign. Coerced to type :obj:`str` before being set.
+        env_dict (:obj:`dict`): XXX
+        overwrite (:obj:`bool`): If set to `False`, do not overwrite the values
+            of previously-set variables. 
     """
-    return (find_executable(exec_name) is not None)
-
-def poll_command(command, shell=False, env=None):
-    """Runs a shell command and prints stdout in real-time.
-    
-    Optional ability to pass a different environment to the subprocess. See
-    documentation for the Python2 `subprocess 
-    <https://docs.python.org/2/library/subprocess.html>`_ module.
-
-    Args:
-        command: list of command + arguments, or the same as a single string. 
-            See `subprocess` syntax. Note this interacts with the `shell` setting.
-        shell (:py:obj:`bool`, optional): shell flag, passed to Popen, 
-            default `False`.
-        env (:py:obj:`dict`, optional): environment variables to set, passed to 
-            Popen, default `None`.
-    """
-    process = subprocess.Popen(
-        command, shell=shell, env=env, stdout=subprocess.PIPE)
-    while True:
-        output = process.stdout.readline()
-        if output == '' and process.poll() is not None:
-            break
-        if output:
-            print(output.strip())
-    rc = process.poll()
-    return rc
-
-class TimeoutAlarm(Exception):
-    # dummy exception for signal handling in run_command
-    pass
-
-def run_command(command, env=None, cwd=None, timeout=0, dry_run=False):
-    """Subprocess wrapper to facilitate running single command without starting
-    a shell.
-
-    Note:
-        We hope to save some process overhead by not running the command in a
-        shell, but this means the command can't use piping, quoting, environment 
-        variables, or filename globbing etc.
-
-    See documentation for the Python2 `subprocess 
-    <https://docs.python.org/2/library/subprocess.html>`_ module.
-
-    Args:
-        command (list of :py:obj:`str`): List of commands to execute
-        env (:py:obj:`dict`, optional): environment variables to set, passed to 
-            `Popen`, default `None`.
-        cwd (:py:obj:`str`, optional): child processes' working directory, passed
-            to `Popen`. Default is `None`, which uses parent processes' directory.
-        timeout (:py:obj:`int`, optional): Optionally, kill the command's subprocess
-            and raise a CalledProcessError if the command doesn't finish in 
-            `timeout` seconds.
-
-    Returns:
-        :py:obj:`list` of :py:obj:`str` containing output that was written to stdout  
-        by each command. Note: this is split on newlines after the fact.
-
-    Raises:
-        CalledProcessError: If any commands return with nonzero exit code.
-            Stderr for that command is stored in `output` attribute.
-    """
-    def _timeout_handler(signum, frame):
-        raise TimeoutAlarm
-
-    if isinstance(command, str):
-        command = shlex.split(command)
-    cmd_str = ' '.join(command)
-    if dry_run:
-        _log.warning('DRY_RUN: call %s', cmd_str)
-        return
-    proc = None
-    pid = None
-    retcode = 1
-    stderr = ''
-    try:
-        proc = subprocess.Popen(
-            command, shell=False, env=env, cwd=cwd,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            universal_newlines=True, bufsize=0
-        )
-        pid = proc.pid
-        # py3 has timeout built into subprocess; this is a workaround
-        signal.signal(signal.SIGALRM, _timeout_handler)
-        signal.alarm(int(timeout))
-        (stdout, stderr) = proc.communicate()
-        signal.alarm(0)  # cancel the alarm
-        retcode = proc.returncode
-    except TimeoutAlarm:
-        if proc:
-            proc.kill()
-        retcode = errno.ETIME
-        stderr = stderr+"\nKilled by timeout (>{}sec).".format(timeout)
-    except Exception as exc:
-        if proc:
-            proc.kill()
-        stderr = stderr+"\nCaught exception {0}({1!r})".format(
-            type(exc).__name__, exc.args)
-    if retcode != 0:
-        _log.error(
-            "run_command on %s (pid %s) exit status=%s:%s",
-            cmd_str, pid, retcode, stderr
-        )
-        raise subprocess.CalledProcessError(
-            returncode=retcode, cmd=cmd_str, output=stderr)
-    if '\0' in stdout:
-        return stdout.split('\0')
+    if (not overwrite) and varname in env_dict: 
+        _log.debug("Not overwriting ENV %s=%s", varname, env_dict[varname])
     else:
-        return stdout.splitlines()
+        if 'varname' in env_dict and env_dict[varname] != varvalue: 
+            _log.debug(
+                "WARNING: setenv %s=%s overriding previous setting %s",
+                varname, varvalue, env_dict[varname]
+            )
+        env_dict[varname] = varvalue
 
-def run_shell_command(command, env=None, cwd=None, dry_run=False):
-    """Subprocess wrapper to facilitate running shell commands.
+        # environment variables must be strings
+        if isinstance(varvalue, bool):
+            if varvalue == True:
+                varvalue = '1'
+            else:
+                varvalue = '0'
+        elif not isinstance(varvalue, str):
+            varvalue = str(varvalue)
+        os.environ[varname] = varvalue
 
-    See documentation for the Python2 `subprocess 
-    <https://docs.python.org/2/library/subprocess.html>`_ module.
+        _log.debug("ENV %s=%s", varname, env_dict[varname])
 
-    Args:
-        commands (list of :py:obj:`str`): List of commands to execute
-        env (:py:obj:`dict`, optional): environment variables to set, passed to 
-            `Popen`, default `None`.
-        cwd (:py:obj:`str`, optional): child processes' working directory, passed
-            to `Popen`. Default is `None`, which uses parent processes' directory.
+def check_required_envvar(*varlist):
+    varlist = varlist[0]   #unpack tuple
+    for n, var_n in enumerate(varlist):
+        _log.debug("checking envvar %s %s", n, var_n)
+        try:
+            _ = os.environ[var_n]
+        except KeyError:
+            _log.exception("Environment variable %s not found.", var_n)
+            raise
 
-    Returns:
-        :py:obj:`list` of :py:obj:`str` containing output that was written to stdout  
-        by each command. Note: this is split on newlines after the fact, so if 
-        commands give != 1 lines of output this will not map to the list of commands
-        given.
-
-    Raises:
-        CalledProcessError: If any commands return with nonzero exit code.
-            Stderr for that command is stored in `output` attribute.
-    """
-    # shouldn't lookup on each invocation, but need abs path to bash in order
-    # to pass as executable argument. Pass executable argument because we want
-    # bash specifically (not default /bin/sh, and we save a bit of overhead by
-    # starting bash directly instead of from sh.)
-    bash_exec = find_executable('bash')
-
-    if not isinstance(command, str):
-        command = ' '.join(command)
-    if dry_run:
-        _log.warning('DRY_RUN: call %s', command)
-        return
-    proc = None
-    pid = None
-    retcode = 1
-    stderr = ''
-    try:
-        proc = subprocess.Popen(
-            command,
-            shell=True, executable=bash_exec,
-            env=env, cwd=cwd,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            universal_newlines=True, bufsize=0
-        )
-        pid = proc.pid
-        (stdout, stderr) = proc.communicate()
-        retcode = proc.returncode
-    except Exception as exc:
-        if proc:
-            proc.kill()
-        stderr = stderr+"\nCaught exception {0}({1!r})".format(
-            type(exc).__name__, exc.args)
-    if retcode != 0:
-        _log.error(
-            "run_shell_command on %s (pid %s) exit status=%s:%s",
-            command, pid, retcode, stderr
-        )
-        raise subprocess.CalledProcessError(
-            returncode=retcode, cmd=command, output=stderr)
-    if '\0' in stdout:
-        return stdout.split('\0')
-    else:
-        return stdout.splitlines()
-
-def is_iterable(obj):
-    return isinstance(obj, collections.abc.Iterable) \
-        and not isinstance(obj, str) # py3 strings have __iter__
-
-def coerce_to_iter(obj, coll_type=list):
-    assert coll_type in [list, set, tuple] # only supported types for now
-    if obj is None:
-        return coll_type([])
-    elif isinstance(obj, coll_type):
-        return obj
-    elif is_iterable(obj):
-        return coll_type(obj)
-    else:
-        return coll_type([obj])
-
-def coerce_from_iter(obj):
-    if is_iterable(obj):
-        if len(obj) == 1:
-            return list(obj)[0]
+def check_required_dirs(already_exist =[], create_if_nec = []):
+    # arguments can be envvar name or just the paths
+    for dir_in in already_exist + create_if_nec : 
+        _log.debug("Looking at %s", dir_in)
+        if dir_in in os.environ:  
+            dir_ = os.environ[dir_in]
         else:
-            return list(obj)
+            _log.debug("Envvar %s not defined", dir_in)    
+            dir_ = dir_in
+
+        if not os.path.exists(dir_):
+            if not dir_in in create_if_nec:
+                _log.error("%s=%s directory does not exist", dir_in, dir_)
+                raise OSError("Directory {} does not exist".format(dir_))
+            else:
+                _log.info("Creating %s", dir_)
+                os.makedirs(dir_)
+        else:
+            _log.info("Found %s", dir_)
+
+def bump_version(path, new_v=None, extra_dirs=[]):
+    # return a filename that doesn't conflict with existing files.
+    # if extra_dirs supplied, make sure path doesn't conflict with pre-existing
+    # files at those locations either.
+    def _split_version(file_):
+        match = re.match(r"""
+            ^(?P<file_base>.*?)   # arbitrary characters (lazy match)
+            (\.v(?P<version>\d+))  # literal '.v' followed by digits
+            ?                      # previous group may occur 0 or 1 times
+            $                      # end of string
+            """, file_, re.VERBOSE)
+        if match:
+            return (match.group('file_base'), match.group('version'))
+        else:
+            return (file_, '')
+
+    def _reassemble(dir_, file_, version, ext_, final_sep):
+        if version:
+            file_ = ''.join([file_, '.v', str(version), ext_])
+        else:
+            # get here for version == 0, '' or None
+            file_ = ''.join([file_, ext_])
+        return os.path.join(dir_, file_) + final_sep
+
+    def _path_exists(dir_list, file_, new_v, ext_, sep):
+        new_paths = [_reassemble(d, file_, new_v, ext_, sep) for d in dir_list]
+        return any([os.path.exists(p) for p in new_paths])
+
+    if path.endswith(os.sep):
+        # remove any terminating slash on directory
+        path = path.rstrip(os.sep)
+        final_sep = os.sep
     else:
-        return obj
+        final_sep = ''
+    dir_, file_ = os.path.split(path)
+    dir_list = util.coerce_to_iter(extra_dirs)
+    dir_list.append(dir_)
+    file_, old_v = _split_version(file_)
+    if not old_v:
+        # maybe it has an extension and then a version number
+        file_, ext_ = os.path.splitext(file_)
+        file_, old_v = _split_version(file_)
+    else:
+        ext_ = ''
 
-def filter_kwargs(kwarg_dict, function):
-    """Given a dict of kwargs, return only those kwargs accepted by function.
-    """
-    named_args = set(function.__code__.co_varnames)
-    # if 'kwargs' in named_args:
-    #    return kwarg_dict # presumably can handle anything
-    return dict((k, kwarg_dict[k]) for k in named_args \
-        if k in kwarg_dict and k not in ['self', 'args', 'kwargs'])
+    if new_v is not None:
+        # removes version if new_v ==0
+        new_path = _reassemble(dir_, file_, new_v, ext_, final_sep)
+    else:
+        if not old_v:
+            new_v = 0
+        else:
+            new_v = int(old_v)
+        while _path_exists(dir_list, file_, new_v, ext_, final_sep):
+            new_v = new_v + 1
+        new_path = _reassemble(dir_, file_, new_v, ext_, final_sep)
+    return (new_path, new_v)
 
-def signal_logger(caller_name, signum=None, frame=None):
-    """Lookup signal name from number; `<https://stackoverflow.com/a/2549950>`__.
+class _DoubleBraceTemplate(string.Template):
+    """Private class used by :func:`~util_mdtf.append_html_template` to do 
+    string templating with double curly brackets as delimiters, since single
+    brackets are also used in css.
+
+    See `https://docs.python.org/3.7/library/string.html#string.Template`_ and 
+    `https://stackoverflow.com/a/34362892`__.
     """
-    if signum:
-        sig_lookup = {
-            k:v for v, k in reversed(sorted(list(signal.__dict__.items()))) \
-                if v.startswith('SIG') and not v.startswith('SIG_')
-        }
-        _log.info(
-            "%s caught signal %s (%s)",
-            caller_name, sig_lookup.get(signum, 'UNKNOWN'), signum
+    flags = re.VERBOSE # matching is case-sensitive, unlike default
+    delimiter = '{{' # starting delimter is two braces, then apply
+    pattern = r"""
+        \{\{(?:                 # match delimiter itself, but don't include it
+        # Alternatives for what to do with string following delimiter:
+        # case 1) text is an escaped double bracket, written as '{{{{'.
+        (?P<escaped>\{\{)|
+        # case 2) text is the name of an env var, possibly followed by whitespace,
+        # followed by closing double bracket. Match POSIX env var names,
+        # case-sensitive (see https://stackoverflow.com/a/2821183), with the 
+        # addition that hyphens are allowed.
+        # Can't tell from docs what the distinction between <named> and <braced> is.
+        \s*(?P<named>[a-zA-Z_][a-zA-Z0-9_-]*)\s*\}\}|
+        \s*(?P<braced>[a-zA-Z_][a-zA-Z0-9_-]*)\s*\}\}|
+        # case 3) none of the above: ignore & move on (when using safe_substitute)
+        (?P<invalid>)
         )
-        _log.debug("%s frame: %s", caller_name, frame)
+    """
+
+def append_html_template(template_file, target_file, template_dict={}, 
+    create=True, append=True):
+    """Perform subtitutions on template_file and write result to target_file.
+
+    Variable substitutions are done with custom 
+    `templating <https://docs.python.org/3.7/library/string.html#template-strings>`__,
+    replacing *double* curly bracket-delimited keys with their values in template_dict.
+    For example, if template_dict is {'A': 'foo'}, all occurrences of the string
+    `{{A}}` in template_file are replaced with the string `foo`. Spaces between
+    the braces and variable names are ignored.
+
+    Double-curly-bracketed strings that don't correspond to keys in template_dict are
+    ignored (instead of raising a KeyError.)
+
+    Double curly brackets are chosen as the delimiter to match the default 
+    syntax of, eg, django and jinja2. Using single curly braces leads to conflicts
+    with CSS syntax.
+
+    Args:
+        template_file: Path to template file.
+        target_file: Destination path for result. 
+        template_dict: :py:obj:`dict` of variable name-value pairs. Both names
+            and values must be strings.
+        create: Boolean, default True. If true, create target_file if it doesn't
+            exist, otherwise raise an OSError. 
+        append: Boolean, default True. If target_file exists and this is true,
+            append the substituted contents of template_file to it. If false,
+            overwrite target_file with the substituted contents of template_file.
+    """
+    assert os.path.exists(template_file)
+    with io.open(template_file, 'r', encoding='utf-8') as f:
+        html_str = f.read()
+        html_str = _DoubleBraceTemplate(html_str).safe_substitute(template_dict)
+    if not os.path.exists(target_file):
+        if create:
+            _log.debug("Write %s to new %s", template_file, target_file)
+            mode = 'w'
+        else:
+            raise OSError("Can't find {}".format(target_file))
+    else:
+        if append:
+            _log.debug("Append %s to %s", template_file, target_file)
+            mode = 'a'
+        else:
+            _log.debug("Overwrite %s with %s", target_file, template_file)
+            os.remove(target_file)
+            mode = 'w'
+    with io.open(target_file, mode, encoding='utf-8') as f:
+        f.write(html_str)
