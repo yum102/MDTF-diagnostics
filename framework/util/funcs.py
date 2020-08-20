@@ -49,15 +49,15 @@ class MultiMap(collections.defaultdict):
         """
         super(MultiMap, self).__init__(set, *args, **kwargs)
         for key in iter(self.keys()):
-            super(MultiMap, self).__setitem__(key, coerce_to_iter(self[key], set))
+            super(MultiMap, self).__setitem__(key, to_iter(self[key], set))
 
     def __setitem__(self, key, value):
-        super(MultiMap, self).__setitem__(key, coerce_to_iter(value, set))
+        super(MultiMap, self).__setitem__(key, to_iter(value, set))
 
     def get_(self, key):
         if key not in list(self.keys()):
             raise KeyError(key)
-        return coerce_from_iter(self[key])
+        return from_iter(self[key])
     
     def to_dict(self):
         d = {}
@@ -75,7 +75,7 @@ class MultiMap(collections.defaultdict):
     def inverse_get_(self, val):
         # don't raise keyerror if empty; could be appropriate result
         inv_lookup = self.inverse()
-        return coerce_from_iter(inv_lookup[val])
+        return from_iter(inv_lookup[val])
 
 
 class NameSpace(dict):
@@ -229,7 +229,7 @@ def is_iterable(obj):
     return isinstance(obj, collections.abc.Iterable) \
         and not isinstance(obj, str) # py3 strings have __iter__
 
-def coerce_to_iter(obj, coll_type=list):
+def to_iter(obj, coll_type=list):
     assert coll_type in [list, set, tuple] # only supported types for now
     if obj is None:
         return coll_type([])
@@ -240,7 +240,7 @@ def coerce_to_iter(obj, coll_type=list):
     else:
         return coll_type([obj])
 
-def coerce_from_iter(obj):
+def from_iter(obj):
     if is_iterable(obj):
         if len(obj) == 1:
             return list(obj)[0]

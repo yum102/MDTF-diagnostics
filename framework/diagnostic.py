@@ -112,7 +112,7 @@ class Diagnostic(object):
         elif not d.get('convention', None):
             d['convention'] = 'CF'
         for key, val in iter(d['runtime_requirements'].items()):
-            d['runtime_requirements'][key] = util.coerce_to_iter(val)
+            d['runtime_requirements'][key] = util.to_iter(val)
         _log.debug("%s settings: %s", self.name, d)
         return d
 
@@ -138,7 +138,7 @@ class Diagnostic(object):
             if 'alternates' not in var:
                 varlist[i]['alternates'] = []
             else:
-                varlist[i]['alternates'] = util.coerce_to_iter(var['alternates'])
+                varlist[i]['alternates'] = util.to_iter(var['alternates'])
         _log.debug("%s varlist: %s", self.name, varlist)
         return varlist
 

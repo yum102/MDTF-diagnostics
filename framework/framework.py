@@ -83,7 +83,7 @@ class MDTFFramework(object):
 
     def parse_pod_list(self, cli_obj, config):
         self.pod_list = []
-        args = util.coerce_to_iter(config.config.pop('pods', []), set)
+        args = util.to_iter(config.config.pop('pods', []), set)
         if 'example' in args or 'examples' in args:
             self.pod_list = [pod for pod in config.pods \
                 if pod.startswith('example')]
@@ -95,7 +95,7 @@ class MDTFFramework(object):
             realms = args.intersection(set(config.all_realms))
             args = args.difference(set(config.all_realms)) # remainder
             for key in config.pod_realms:
-                if util.coerce_to_iter(key, set).issubset(realms):
+                if util.to_iter(key, set).issubset(realms):
                     self.pod_list.extend(config.pod_realms[key])
             # specify pods by name
             pods = args.intersection(set(config.pods))
@@ -112,7 +112,7 @@ class MDTFFramework(object):
             exit(1)
 
     def parse_case_list(self, cli_obj, config):
-        case_list_in = util.coerce_to_iter(cli_obj.case_list)
+        case_list_in = util.to_iter(cli_obj.case_list)
         cli_d = self._populate_from_cli(cli_obj, 'MODEL')
         if 'CASE_ROOT_DIR' not in cli_d and cli_obj.config.get('root_dir', None): 
             # CASE_ROOT was set positionally
@@ -216,7 +216,7 @@ class MDTFFramework(object):
     def manual_dispatch(self, config):
         def _dispatch(setting, class_suffix):
             class_prefix = config.config.get(setting, '')
-            class_prefix = util.coerce_from_iter(class_prefix)
+            class_prefix = util.from_iter(class_prefix)
             # drop '_' and title-case class name
             class_prefix = ''.join(class_prefix.split('_')).title()
             for mod in self._dispatch_search:

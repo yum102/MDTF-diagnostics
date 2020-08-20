@@ -1,7 +1,7 @@
 import os
 import sys
 import collections
-from framework.util import read_json, NameSpace, coerce_to_iter
+from framework.util import read_json, NameSpace, to_iter
 from framework import configs
 
 def setUp_ConfigManager(config=None, paths=None, pods=None, unittest=True):

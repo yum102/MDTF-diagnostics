@@ -63,7 +63,7 @@ class _PathManager(util.NameSpace):
             # need to check existence in case we're being called directly
             assert key in d, 'Error: {} not initialized.'.format(key)
             return util.resolve_path(
-                util.coerce_from_iter(d[key]), root_path=self.CODE_ROOT, env=env
+                util.from_iter(d[key]), root_path=self.CODE_ROOT, env=env
             )
 
     def model_paths(self, case, overwrite=False):
@@ -162,7 +162,7 @@ class VariableTranslator(util.Singleton):
         self.units = {'CF': dict()}
         for filename in config_files:
             d = util.read_json(filename)
-            for conv in util.coerce_to_iter(d['convention_name']):
+            for conv in util.to_iter(d['convention_name']):
                 _log.debug('Found %s', conv)
                 if conv in self.variables:
                     _log.error("Convention %s defined in %s already exists", 
@@ -181,7 +181,7 @@ class VariableTranslator(util.Singleton):
             "Variable name translation doesn't recognize {}.".format(convention)
         inv_lookup = self.variables[convention].inverse()
         try:
-            return util.coerce_from_iter(inv_lookup[varname_in])
+            return util.from_iter(inv_lookup[varname_in])
         except KeyError:
             _log.exception(
                 "Name %s not defined for convention %s.", varname_in, convention

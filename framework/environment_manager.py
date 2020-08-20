@@ -127,7 +127,7 @@ class EnvironmentManager(object, metaclass=ABCMeta):
             stdout = subprocess.STDOUT
         if stderr is None:
             stderr = subprocess.STDOUT
-        run_cmds = util.coerce_to_iter(cmd_list, list)
+        run_cmds = util.to_iter(cmd_list, list)
         if self.test_mode:
             run_cmds = ['echo "TEST MODE: call {}"'.format('; '.join(run_cmds))]
         commands = self.activate_env_commands(env_name) \

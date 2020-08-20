@@ -1,7 +1,7 @@
 # List public symbols for package import.
 from .funcs import (
     Singleton, MultiMap, NameSpace,
-    is_iterable, coerce_to_iter, coerce_from_iter, filter_kwargs
+    is_iterable, to_iter, from_iter, filter_kwargs
 )
 from .file_io import (
     strip_comments, read_json, parse_json, write_json, pretty_print_json,
