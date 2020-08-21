@@ -7,20 +7,6 @@ from framework import util
 
 _log = logging.getLogger(__name__)
 
-class PodRequirementFailure(Exception):
-    """Exception raised if POD doesn't have required resoruces to run. 
-    """
-    def __init__(self, pod, msg=None):
-        self.pod = pod
-        self.msg = msg
-
-    def __str__(self):
-        if self.msg is not None:
-            return ("Requirements not met for {0}."
-                "\nReason: {1}.").format(self.pod.name, self.msg)
-        else:
-            return 'Requirements not met for {}.'.format(self.pod.name)
-
 class Diagnostic(object):
     """Class holding configuration for a diagnostic script.
 
@@ -160,7 +146,7 @@ class Diagnostic(object):
             multiple languages) so the validation must take place in that 
             subprocess.
 
-        Raises: :exc:`~diagnostic.PodRequirementFailure` if requirements
+        Raises: :exc:`~util.exceptions.PodRequirementFailure` if requirements
             aren't met. This is re-raised from the 
             :meth:`~diagnostic.Diagnostic._check_pod_driver` and
             :meth:`~diagnostic.Diagnostic._check_for_varlist_files` 
@@ -171,7 +157,7 @@ class Diagnostic(object):
         if isinstance(self.skipped, Exception):
             # already encountered reason we can't run this, re-raise it here 
             # to log it
-            raise PodRequirementFailure(self,
+            raise util.PodRequirementFailure(self,
                 "Caught {} exception:\n{}".format(
                     type(self.skipped).__name__, self.skipped
                 ))
@@ -183,13 +169,13 @@ class Diagnostic(object):
             self.found_files = found_files
             self.missing_files = missing_files
             if missing_files:
-                raise PodRequirementFailure(self,
+                raise util.PodRequirementFailure(self,
                     "Couldn't find required model data files:\n{}".format(
                         "\n".join(missing_files)
                     ))
             else:
                 _log.debug("%s: No known missing required input files", self.name)
-        except PodRequirementFailure as exc:
+        except util.PodRequirementFailure as exc:
             _log.warning(getattr(exc, 'msg', repr(exc)))
             raise exc
 
@@ -234,7 +220,7 @@ class Diagnostic(object):
                 elif axes[envvar_name] != ax_name \
                     and ax_status[envvar_name] == set_from_axis:
                     # names found in two different files disagree - raise error
-                    raise PodRequirementFailure(self,
+                    raise util.PodRequirementFailure(self,
                         ("Two variables have conflicting axis names {}:"
                             "({}!={})").format(
                                 envvar_name, axes[envvar_name], ax_name
@@ -258,7 +244,7 @@ class Diagnostic(object):
     def _check_pod_driver(self):
         """Private method called by :meth:`~diagnostic.Diagnostic.setUp`.
 
-        Raises: :exc:`~diagnostic.PodRequirementFailure` if driver script
+        Raises: :exc:`~util.exceptions.PodRequirementFailure` if driver script
             can't be found.
         """
         _log.debug("%s received POD settings: %s", self.name, self.__dict__)
@@ -286,7 +272,7 @@ class Diagnostic(object):
                 else:
                     _log.debug("%s: %s not found...", self.name, try_path)
         if self.driver == '':
-            raise PodRequirementFailure(self, 
+            raise util.PodRequirementFailure(self, 
                 """No driver script found in {}. Specify 'driver' in 
                 settings.jsonc.""".format(self.POD_CODE_DIR)
                 )
@@ -294,7 +280,7 @@ class Diagnostic(object):
         if not os.path.isabs(self.driver): # expand relative path
             self.driver = os.path.join(self.POD_CODE_DIR, self.driver)
         if not os.path.exists(self.driver):
-            raise PodRequirementFailure(self, 
+            raise util.PodRequirementFailure(self, 
                 "Unable to locate driver script {}.".format(self.driver)
                 )
 
@@ -303,7 +289,7 @@ class Diagnostic(object):
             driver_ext  = self.driver.split('.')[-1]
             # Possible error: Driver file type unrecognized
             if driver_ext not in programs:
-                raise PodRequirementFailure(self, 
+                raise util.PodRequirementFailure(self, 
                     ("Don't know how to call a .{} file.\n"
                     "Supported programs: {}").format(driver_ext, programs)
                 )

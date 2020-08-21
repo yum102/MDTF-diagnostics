@@ -11,9 +11,9 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from framework import cmip6, configs, datelabel
 from framework import util
 import framework.conflict_resolution as choose
-from framework.data_manager import DataSet, DataManager, DataAccessError
+from framework.data_manager import DataSet, DataManager
 from framework.environment_manager import VirtualenvEnvironmentManager, CondaEnvironmentManager
-from framework.diagnostic import Diagnostic, PodRequirementFailure
+from framework.diagnostic import Diagnostic
 from framework.netcdf_helper import NcoNetcdfHelper # only option currently implemented
 
 _log = logging.getLogger(__name__)
@@ -120,7 +120,7 @@ class GfdlDiagnostic(Diagnostic):
                 dry_run=config.config.get('dry_run', False)
             )
             self._has_placeholder = True
-        except PodRequirementFailure:
+        except util.PodRequirementFailure:
             raise
 
     def tearDown(self):
@@ -219,7 +219,7 @@ class GfdlarchiveDataManager(DataManager, metaclass=ABCMeta):
 
         assert ('CASE_ROOT_DIR' in case_dict)
         if not os.path.isdir(case_dict['CASE_ROOT_DIR']):
-            raise DataAccessError(None, 
+            raise util.DataAccessError(None, 
                 "Can't access CASE_ROOT_DIR = '{}'".format(case_dict['CASE_ROOT_DIR']))
         self.root_dir = case_dict['CASE_ROOT_DIR']
         self.tape_filesystem = is_on_tape_filesystem(self.root_dir)

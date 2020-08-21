@@ -3,10 +3,10 @@ import sys
 import unittest
 import unittest.mock as mock # define mock os.environ so we don't mess up real env vars
 from framework import configs
-from framework.util import file_io
+from framework.util import file_io, exceptions
 from framework.data_manager import DataSet, DataManager
 from framework.datelabel import DateFrequency
-from framework.diagnostic import Diagnostic, PodRequirementFailure
+from framework.diagnostic import Diagnostic
 from framework.tests.shared_setup import setUp_ConfigManager, tearDown_ConfigManager
 
 class TestDiagnosticInit(unittest.TestCase):
@@ -166,7 +166,7 @@ class TestDiagnosticSetUp(unittest.TestCase):
     def test_check_pod_driver_no_driver_2(self, mock_exists):
         # assertion fails if no driver found
         pod = Diagnostic('DUMMY_POD')  
-        self.assertRaises(PodRequirementFailure, pod._check_pod_driver)
+        self.assertRaises(exceptions.PodRequirementFailure, pod._check_pod_driver)
 
 
 class TestDiagnosticCheckVarlist(unittest.TestCase):
@@ -333,7 +333,7 @@ class TestDiagnosticSetUpCustomSettings(unittest.TestCase):
             'settings':{'driver':'C.foo'}, 'varlist':[]
         }
         pod = Diagnostic('DUMMY_POD') 
-        self.assertRaises(PodRequirementFailure, pod._check_pod_driver)
+        self.assertRaises(exceptions.PodRequirementFailure, pod._check_pod_driver)
 
 
 class TestDiagnosticTearDown(unittest.TestCase):

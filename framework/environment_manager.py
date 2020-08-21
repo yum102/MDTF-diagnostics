@@ -9,7 +9,6 @@ from abc import ABCMeta, abstractmethod
 import subprocess
 from framework import configs
 from framework import util
-from framework.diagnostic import PodRequirementFailure
 
 _log = logging.getLogger(__name__)
 
@@ -76,7 +75,7 @@ class EnvironmentManager(object, metaclass=ABCMeta):
 
             try:
                 pod.setUp()
-            except PodRequirementFailure as exc:
+            except util.PodRequirementFailure as exc:
                 log_str = "Skipping execution of {}.\nReason: {}\n".format(
                     exc.pod.name, str(exc))
                 pod.logfile_obj.write(log_str)

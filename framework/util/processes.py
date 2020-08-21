@@ -5,6 +5,7 @@ import subprocess
 import shlex
 import errno
 from distutils.spawn import find_executable
+from .exceptions import TimeoutAlarm
 
 _log = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ class ExceptionPropagatingThread(threading.Thread):
         except BaseException as exc:
             self.exc = exc
 
-    def join(self, timeout=None):
+    def join(self, timeout=None): 
         super(ExceptionPropagatingThread, self).join(timeout)
         if self.exc:
             raise self.exc
@@ -62,10 +63,6 @@ def poll_command(command, shell=False, env=None):
             print(output.strip())
     rc = process.poll()
     return rc
-
-class TimeoutAlarm(Exception):
-    # dummy exception for signal handling in run_command
-    pass
 
 def run_command(command, env=None, cwd=None, timeout=0, dry_run=False):
     """Subprocess wrapper to facilitate running single command without starting

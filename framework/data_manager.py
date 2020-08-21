@@ -11,41 +11,8 @@ import datetime
 from subprocess import CalledProcessError
 from framework import configs, datelabel, netcdf_helper
 from framework import util
-from framework.diagnostic import PodRequirementFailure
 
 _log = logging.getLogger(__name__)
-
-class DataQueryFailure(Exception):
-    """Exception signaling a failure to find requested data in the remote location. 
-    
-    Raised by :meth:`~data_manager.DataManager.queryData` to signal failure of a
-    data query. Should be caught properly in :meth:`~data_manager.DataManager.planData`
-    or :meth:`~data_manager.DataManager.fetchData`.
-    """
-    def __init__(self, dataset, msg=''):
-        self.dataset = dataset
-        self.msg = msg
-
-    def __str__(self):
-        if hasattr(self.dataset, 'name'):
-            return 'Query failure for {}: {}.'.format(self.dataset.name, self.msg)
-        else:
-            return 'Query failure: {}.'.format(self.msg)
-
-
-class DataAccessError(Exception):
-    """Exception signaling a failure to obtain data from the remote location.
-    """
-    def __init__(self, dataset, msg=''):
-        self.dataset = dataset
-        self.msg = msg
-
-    def __str__(self):
-        if hasattr(self.dataset, '_remote_data'):
-            return 'Data access error for {}: {}.'.format(
-                self.dataset._remote_data, self.msg)
-        else:
-            return 'Data access error: {}.'.format(self.msg)
 
 class DataSet(util.NameSpace):
     """Class to describe datasets.
@@ -233,7 +200,7 @@ class DataManager(object, metaclass=ABCMeta):
         if self.data_freq is not None:
             for var in pod.iter_vars_and_alts():
                 if var.date_freq != self.data_freq:
-                    pod.skipped = PodRequirementFailure(
+                    pod.skipped = util.PodRequirementFailure(
                         pod,
                         ("{0} requests {1} (= {2}) at {3} frequency, which isn't "
                         "compatible with case {4} providing data at {5} frequency "
@@ -298,7 +265,7 @@ class DataManager(object, metaclass=ABCMeta):
             try:
                 new_varlist = [var for var \
                     in self._iter_populated_varlist(pod.varlist, pod.name)]
-            except DataQueryFailure as exc:
+            except util.DataQueryFailure as exc:
                 _log.warning("Data query failed on %s; skipping.", pod.name)
                 pod.skipped = exc
                 new_varlist = []
@@ -315,7 +282,7 @@ class DataManager(object, metaclass=ABCMeta):
             try:
                 self.fetch_dataset(file_)
             except CalledProcessError as caught_exc:
-                exc = DataAccessError(
+                exc = util.DataAccessError(
                     file_,
                     """Running external command {} when fetching {} @ {} 
                     returned error: {} (status {}). Did not retry.
@@ -327,7 +294,7 @@ class DataManager(object, metaclass=ABCMeta):
                 self._fetch_exception_handler(exc)
                 continue
             except Exception as caught_exc:
-                exc = DataAccessError(
+                exc = util.DataAccessError(
                     file_,
                     """Caught {} exception ({}) when fetching {} @ {}.
                     Did not retry.
@@ -357,7 +324,7 @@ class DataManager(object, metaclass=ABCMeta):
                 )
                 files = self.query_dataset(var)
                 self.data_files[data_key].update(files)
-            except DataQueryFailure:
+            except util.DataQueryFailure:
                 continue
 
     def _iter_populated_varlist(self, var_iter, pod_name):
@@ -373,7 +340,7 @@ class DataManager(object, metaclass=ABCMeta):
                 )
                 yield var
             elif not var.alternates:
-                raise DataQueryFailure(
+                raise util.DataQueryFailure(
                     var,
                     ("Couldn't find {} (= {}) @ {} for {} & no other "
                         "alternates").format(
@@ -538,7 +505,7 @@ class LocalfileDataManager(DataManager):
         if os.path.isfile(path):
             return [path]
         else:
-            raise DataQueryFailure(dataset, 'File not found at {}'.format(path))
+            raise util.DataQueryFailure(dataset, 'File not found at {}'.format(path))
     
     def local_data_is_current(self, dataset):
         return True 

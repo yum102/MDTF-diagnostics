@@ -1,4 +1,5 @@
 # List public symbols for package import.
+from .exceptions import *
 from .funcs import (
     Singleton, MultiMap, NameSpace,
     is_iterable, to_iter, from_iter, filter_kwargs
