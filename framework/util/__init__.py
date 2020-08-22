@@ -14,3 +14,5 @@ from .processes import (
     ExceptionPropagatingThread, 
     check_executable, poll_command, run_command, run_shell_command, signal_logger
 )
+# don't include .logs in package, as custom logger classes should only be 
+# needed in startup script

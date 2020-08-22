@@ -1,0 +1,298 @@
+"""Code related to configuration and handling of framework logging.
+"""
+import os
+import sys
+import datetime
+import subprocess
+import logging
+import logging.config
+import logging.handlers
+
+from .file_io import read_json
+
+_log = logging.getLogger(__name__)
+
+class MultiFlushMemoryHandler(logging.handlers.MemoryHandler):
+    """Subclass :py:class:`logging.handlers.MemoryHandler` to enable flushing
+    the contents of its log buffer to multiple targets. We do this to solve the 
+    chicken-and-egg problem of logging any events that happen before the log 
+    outputs are configured: those events are captured by an instance of this 
+    handler and then transfer()'ed to other handlers once they're set up.
+    See `https://stackoverflow.com/a/12896092`__.
+    """
+
+    def transfer(self, target_handler):
+        """Transfer contents of buffer to target_handler.
+        
+        Args:
+            target_handler (:py:class:`logging.Handler`): log handler to transfer
+                contents of buffer to.
+        """
+        self.acquire()
+        try:
+            self.setTarget(target_handler)
+            if self.target:
+                for record in self.buffer:
+                    self.target.handle(record)
+                # self.buffer = [] # don't clear buffer!
+        finally:
+            self.release()
+
+    def transfer_to_all(self, logger):
+        """Transfer contents of buffer to all handlers attached to logger.
+
+        If no handlers are attached to the logger, a warning is printed and the
+        buffer is transferred to the :py:data:`logging.lastResort` handler, i.e.
+        printed to stderr.
+        
+        Args:
+            logger (:py:class:`logging.Logger`): logger to transfer
+                contents of buffer to.
+        """
+        no_transfer_flag = True
+        for handler in logger.handlers:
+            if handler is not self:
+                self.transfer(handler)
+                no_transfer_flag = False
+        if no_transfer_flag:
+            logger.warning("No loggers configured.")
+            self.transfer(logging.lastResort)
+
+
+class DebugHeaderFileHandler(logging.FileHandler):
+    """Subclass :py:class:`logging.FileHandler` to print system information to
+    start of file without writing it to other loggers.
+    """
+    def _debug_header(self):
+        """Returns string of system debug information to use as log file header.
+        Calls :func:`git_info`.
+        """
+        try:
+            (git_branch, git_hash, git_dirty) = git_info()
+            str_ = (
+            "Started logging at {0}\n"
+            "git hash/branch: {1} (on {2})\n"
+            "uncommitted files: {3}\n"
+            "sys.platform: '{4}'\nsys.executable: '{5}'\nsys.version: '{6}'\n"
+            "sys.path: {7}\nsys.argv: {8}\n").format(
+                datetime.datetime.now(), 
+                git_hash, git_branch,
+                git_dirty,
+                sys.platform, sys.executable, sys.version, 
+                sys.path, sys.argv
+            ) + (80 * '-') + '\n\n'
+            return str_
+        except Exception as exc:
+            print(exc)
+            return "ERROR: couldn't gather header information.\n"
+    
+    def _open(self):
+        """Write header information right after we open the log file, then
+        proceed normally.
+        """
+        fp = super(DebugHeaderFileHandler, self)._open()
+        fp.write(self._debug_header())
+        return fp
+
+
+class HangingIndentFormatter(logging.Formatter):
+    """:py:class:`logging.Formatter` that applies a hanging indent, making it 
+    easier to tell where one entry stops and the next starts.
+    """
+    # https://blog.belgoat.com/python-textwrap-wrap-your-text-to-terminal-size/
+    def __init__(self, fmt=None, datefmt=None, style='%', tabsize=0, header="", footer=""):
+        """Initialize formatter with extra arguments.
+
+        Args:
+            fmt (str): format string, as in :py:class:`logging.Formatter`.
+            datefmt (str): date format string, as in :py:class:`logging.Formatter`
+                or `strftime <https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior>`__.
+            style (str): string templating style, as in :py:class:`logging.Formatter`.
+            tabsize (int): Number of spaces to use for hanging indent.
+            header (str): Optional constant string to prepend to each log entry.
+            footer (str): Optional constant string to append to each log entry.
+        """
+        super(HangingIndentFormatter, self).__init__(fmt=fmt, datefmt=datefmt, style=style)
+        self.indent = (tabsize * ' ')
+        self.stack_indent = self.indent + '|'
+        self.header = str(header)
+        self.footer = str(footer)
+
+    @staticmethod
+    def _hanging_indent(str_, initial_indent, subsequent_indent):
+        """Poor man's indenter. Easier than using textwrap for this case.
+
+        Args:
+            str_ (str): String to be indented.
+            initial_indent (str): string to insert as the indent for the first 
+                line.
+            subsequent_indent (str): string to insert as the indent for all 
+                subsequent lines.
+
+        Returns:
+            Indented string.
+        """
+        lines_ = str_.splitlines()
+        lines_out = []
+        if len(lines_) > 0:
+            lines_out = lines_out + [initial_indent + lines_[0]]
+        if len(lines_) > 1:
+            lines_out = lines_out + [(subsequent_indent+l) for l in lines_[1:]]
+        return '\n'.join(lines_out)
+
+    def format(self, record):
+        """Format the specified :py:class:`logging.LogRecord` as text, adding
+        indentation and header/footer.
+
+        Args:
+            record (:py:class:`logging.LogRecord`): logging record to be formatted.
+
+        Returns:
+            String representation of the log entry.
+
+        This essentially repeats the method's `implementation 
+        <https://github.com/python/cpython/blob/4e02981de0952f54bf87967f8e10d169d6946b40/Lib/logging/__init__.py#L595-L625>`__
+        in the python standard library. See comments there and the `documentation
+        <https://docs.python.org/3.7/library/logging.html>`__ for :py:module:`logging`.
+        """
+        record.message = record.getMessage()
+        if self.usesTime():
+            record.asctime = self.formatTime(record, self.datefmt)
+        s = self.formatMessage(record)
+        # indent the text of the log message itself
+        s = self._hanging_indent(s, '', self.indent)
+        if self.header:
+            s = self.header + s
+
+        if record.exc_info and not record.exc_text:
+            record.exc_text = self.formatException(record.exc_info)
+        if record.exc_text:
+            # text from formatting the exception. NOTE that this includes the 
+            # stack trace without populating stack_info or calling formatStack.
+            if not s.endswith('\n'):
+                s = s + '\n'
+            s = s + self._hanging_indent(
+                record.exc_text, 
+                self.indent, self.stack_indent
+            )
+        if record.stack_info:
+            # stack_info apparently only used if our format string (ie, 'fmt' in
+            # init) requests a stack trace?
+            if not s.endswith('\n'):
+                s = s + '\n'
+            s = s + self._hanging_indent(
+                self.formatStack(record.stack_info),
+                self.stack_indent, self.stack_indent
+            )
+        if self.footer:
+            s = s + self.footer
+        return s
+
+
+class GeqLevelFilter(logging.Filter):
+    """:py:class:`logging.Filter` to include only log messages with a severity of
+    level or worse. This is normally done by setting the level attribute on a
+    :py:class:`logging.Handler`, but we need to add a filter when transferring
+    records from another logger, as shown in 
+    `https://stackoverflow.com/a/24324246`__."""
+    def __init__(self, name="", level=None):
+        super(GeqLevelFilter, self).__init__(name=name)
+        if level is None:
+            level = logging.NOTSET
+        if not isinstance(level, int):
+            if hasattr(logging, str(level)):
+                level = getattr(logging, str(level))
+            else:
+                level = int(level)
+        self.levelno = level
+
+    def filter(self, record):
+        return record.levelno >= self.levelno
+
+class LtLevelFilter(logging.Filter):
+    """:py:class:`logging.Filter` to include only log messages with a severity 
+    less than level.
+    """
+    def __init__(self, name="", level=None):
+        super(LtLevelFilter, self).__init__(name=name)
+        if level is None:
+            level = logging.NOTSET
+        if not isinstance(level, int):
+            if hasattr(logging, str(level)):
+                level = getattr(logging, str(level))
+            else:
+                level = int(level)
+        self.levelno = level
+
+    def filter(self, record):
+        return record.levelno < self.levelno
+
+
+def git_info():
+    """Get the current git branch, hash, and list of uncommitted files, if 
+    available.
+
+    Called by :meth:`DebugHeaderFileHandler._debug_header`. Based on NumPy's 
+    implementation: `https://stackoverflow.com/a/40170206`__.
+    """
+    def _minimal_ext_cmd(cmd):
+        # construct minimal environment
+        env = {'LANGUAGE':'C', 'LANG':'C', 'LC_ALL':'C'}
+        for k in ['SYSTEMROOT', 'PATH']:
+            v = os.environ.get(k)
+            if v is not None:
+                env[k] = v
+        try:
+            out = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=env
+            ).communicate()[0]
+        except subprocess.CalledProcessError:
+            out = ''
+        return out.strip().decode('utf-8')
+
+    git_branch = ""
+    git_hash = ""
+    git_dirty = ""
+    try:
+        git_branch = _minimal_ext_cmd(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
+        git_hash = _minimal_ext_cmd(['git', 'rev-parse', 'HEAD'])
+        git_dirty = _minimal_ext_cmd(['git', 'diff', '--no-ext-diff', '--name-only'])
+    except OSError:
+        pass
+        
+    if git_dirty:
+        git_dirty = git_dirty.splitlines()
+    elif git_hash:
+        git_dirty = "<none>"
+    else:
+        git_dirty = "<couldn't get uncomitted files>"
+    if not git_branch:
+        git_branch = "<no branch>"
+    if not git_hash:
+        git_hash = "<couldn't get git hash>"
+    return (git_branch, git_hash, git_dirty)
+
+
+def mdtf_log_config(config_path, temp_log_cache, root_logger):
+    """Wrapper to handle logger configuration from a file and transfer of the 
+    temporary log cache to the newly-configured loggers.
+
+    Args:
+        config_path (str): Path to the logger configuration file. This is taken
+            to be in .jsonc formats, following the :py:mod:`logging` ``dictConfig``
+            `schema <https://docs.python.org/3.7/library/logging.config.html#logging-config-dictschema>`__.
+        temp_log_cache (:py:class:`logging.Handler`): Log handler that's been 
+            caching any logged events issued before we configured the loggers.
+        root_logger (:py:class:`logging.Logger`): Framework's root logger, to
+            which temp_log_cache was attached.
+    """
+    try:
+        log_config = read_json(config_path)
+        logging.config.dictConfig(log_config)
+    except Exception as exc:
+        _log.exception("Logging config failed.")
+
+    # transfer cache contents to configured loggers and shut down cache
+    temp_log_cache.transfer_to_all(root_logger)
+    temp_log_cache.close()
+    root_logger.removeHandler(temp_log_cache)

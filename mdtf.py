@@ -9,47 +9,14 @@ if sys.version_info[0] < 3 or sys.version_info[1] < 7:
     exit()
 # passed; continue with imports
 import os.path
-import json
 import logging
-import logging.config
-import logging.handlers
-
-class MultiFlushMemoryHandler(logging.handlers.MemoryHandler):
-    """Extend flush() method of logging.handlers.MemoryHandler to flush contents
-    of log buffer to multiple targets. We do this to solve the chicken-and-egg
-    problem of logging any events that happen before the log outputs are 
-    configured: those events are captured by an instance of this handler and 
-    then transfer()'ed to other handlers once they're set up.
-    See `https://stackoverflow.com/a/12896092`__.
-    """
-    def transfer(self, target_handler):
-        """Transfer contents of buffer to target_handler."""
-        self.acquire()
-        try:
-            self.setTarget(target_handler)
-            if self.target:
-                for record in self.buffer:
-                    self.target.handle(record)
-                # self.buffer = [] # don't clear buffer!
-        finally:
-            self.release()
-
-    def transfer_to_all(self, logger):
-        """Transfer contents of buffer to all handlers attached to logger."""
-        no_transfer_flag = True
-        for handler in logger.handlers:
-            if handler is not self:
-                self.transfer(handler)
-                no_transfer_flag = False
-        if no_transfer_flag:
-            logger.warning("No loggers configured.")
-            self.transfer(logging.lastResort)
+from framework.util import logs
 
 # get root logger and set up temporary log cache for catching pre-config errors
 logging.captureWarnings(True)
 _log = logging.getLogger()
 _log.setLevel(logging.DEBUG)
-temp_log_cache = MultiFlushMemoryHandler(1024*32, flushOnClose=False)
+temp_log_cache = logs.MultiFlushMemoryHandler(1024*32, flushOnClose=False)
 _log.addHandler(temp_log_cache)
 
 # get dir containing this script:
@@ -57,17 +24,9 @@ code_root = os.path.dirname(os.path.realpath(__file__))
 fmwk_dir = os.path.join(code_root, 'framework')
 
 # now configure the real loggers from a file
-try:
-    with open(os.path.join(fmwk_dir, 'log_config.json')) as file_:
-        log_config = json.load(file_)
-    logging.config.dictConfig(log_config)
-except Exception as exc:
-    _log.exception("Logging config failed.")
-
-# transfer cache contents to real loggers
-temp_log_cache.transfer_to_all(_log)
-temp_log_cache.close()
-_log.removeHandler(temp_log_cache)
+logs.mdtf_log_config(
+    os.path.join(fmwk_dir, 'logging_template.jsonc'), temp_log_cache, _log
+)
 
 from framework.cli import FrameworkCLIHandler, InfoCLIHandler
 from framework.framework import MDTFFramework
