@@ -3,13 +3,10 @@ import sys
 import signal
 import shutil
 import logging
-from framework import cli
 from framework import util
-from framework import util_mdtf
-from framework import data_manager
-from framework import environment_manager
-from framework import diagnostic
-from framework import netcdf_helper
+from framework import (
+    cli, configs, data_manager, environment_manager, diagnostic, netcdf_helper
+)
 
 _log = logging.getLogger(__name__)
 
@@ -32,7 +29,7 @@ class MDTFFramework(object):
         # load pod data
         pod_info_tuple = cli.load_pod_settings(code_root)
         # do nontrivial parsing
-        config = util_mdtf.ConfigManager(cli_obj, pod_info_tuple)
+        config = configs.ConfigManager(cli_obj, pod_info_tuple)
         print(util.pretty_print_json(config.paths))
         self.parse_mdtf_args(cli_obj, config)
         # config should be read-only from here on
@@ -42,8 +39,8 @@ class MDTFFramework(object):
     def cleanup_tempdirs(self, signum=None, frame=None):
         # delete temp files
         util.signal_logger(self.__class__.__name__, signum, frame)
-        config = util_mdtf.ConfigManager()
-        tmpdirs = util_mdtf.TempDirManager()
+        config = configs.ConfigManager()
+        tmpdirs = configs.TempDirManager()
         if not config.config.get('keep_temp', False):
             tmpdirs.cleanup()
 
@@ -86,7 +83,7 @@ class MDTFFramework(object):
 
     def parse_pod_list(self, cli_obj, config):
         self.pod_list = []
-        args = util.coerce_to_iter(config.config.pop('pods', []), set)
+        args = util.to_iter(config.config.pop('pods', []), set)
         if 'example' in args or 'examples' in args:
             self.pod_list = [pod for pod in config.pods \
                 if pod.startswith('example')]
@@ -98,7 +95,7 @@ class MDTFFramework(object):
             realms = args.intersection(set(config.all_realms))
             args = args.difference(set(config.all_realms)) # remainder
             for key in config.pod_realms:
-                if util.coerce_to_iter(key, set).issubset(realms):
+                if util.to_iter(key, set).issubset(realms):
                     self.pod_list.extend(config.pod_realms[key])
             # specify pods by name
             pods = args.intersection(set(config.pods))
@@ -115,7 +112,7 @@ class MDTFFramework(object):
             exit(1)
 
     def parse_case_list(self, cli_obj, config):
-        case_list_in = util.coerce_to_iter(cli_obj.case_list)
+        case_list_in = util.to_iter(cli_obj.case_list)
         cli_d = self._populate_from_cli(cli_obj, 'MODEL')
         if 'CASE_ROOT_DIR' not in cli_d and cli_obj.config.get('root_dir', None): 
             # CASE_ROOT was set positionally
@@ -171,8 +168,8 @@ class MDTFFramework(object):
 
     def _post_parse_hook(self, cli_obj, config):
         # init other services
-        _ = util_mdtf.TempDirManager()
-        _ = util_mdtf.VariableTranslator()
+        _ = configs.TempDirManager()
+        _ = configs.VariableTranslator()
         self.verify_paths(config)
 
     def verify_paths(self, config):
@@ -181,7 +178,7 @@ class MDTFFramework(object):
             (config.config.get('keep_temp', False) \
             or config.paths.WORKING_DIR == config.paths.OUTPUT_DIR):
             shutil.rmtree(config.paths.WORKING_DIR)
-        util_mdtf.check_required_dirs(
+        util.check_required_dirs(
             already_exist = [
                 config.paths.CODE_ROOT, config.paths.OBS_DATA_ROOT
             ], 
@@ -219,7 +216,7 @@ class MDTFFramework(object):
     def manual_dispatch(self, config):
         def _dispatch(setting, class_suffix):
             class_prefix = config.config.get(setting, '')
-            class_prefix = util.coerce_from_iter(class_prefix)
+            class_prefix = util.from_iter(class_prefix)
             # drop '_' and title-case class name
             class_prefix = ''.join(class_prefix.split('_')).title()
             for mod in self._dispatch_search:
@@ -237,7 +234,7 @@ class MDTFFramework(object):
 
     def main_loop(self):
         _log.info("Starting MDTF run")
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         self.manual_dispatch(config)
         caselist = []
         # only run first case in list until dependence on env vars cleaned up

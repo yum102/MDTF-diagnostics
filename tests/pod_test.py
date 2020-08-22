@@ -1,8 +1,8 @@
 import os
 import unittest
-import test_input_checksums
-import test_POD_execution
-import test_output_checksums
+from . import test_input_checksums
+from . import test_POD_execution
+from . import test_output_checksums
 
 #if __name__ == '__main__':
 os.environ['_MDTF_DATA_TEST'] = 'true'

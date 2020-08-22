@@ -1,13 +1,13 @@
 import os
 import unittest
-import mock # define mock os.environ so we don't mess up real env vars
-from framework.mdtf import MDTFFramework
-from framework import util_mdtf
+import unittest.mock as mock # define mock os.environ so we don't mess up real env vars
+from framework.framework import MDTFFramework
+from framework import configs
 
 @unittest.skip("")
 class TestMDTFArgParsing(unittest.TestCase):
     def setUp(self):
-        _ = util_mdtf.PathManager(unittest = True)
+        _ = configs.PathManager(unittest = True)
         self.config_test = {
             'case_list':[{'A':'B'}],
             'paths':{'C':'/D'},
@@ -18,7 +18,7 @@ class TestMDTFArgParsing(unittest.TestCase):
         # call _reset method deleting clearing PathManager for unit testing, 
         # otherwise the second, third, .. tests will use the instance created 
         # in the first test instead of being properly initialized
-        temp = util_mdtf.PathManager(unittest = True)
+        temp = configs.PathManager(unittest = True)
         temp._reset()
 
     def test_parse_mdtf_args_config(self):
@@ -37,7 +37,7 @@ class TestMDTFArgParsing(unittest.TestCase):
         self.assertEqual(config['paths']['C'], '/X')
         self.assertEqual(config['settings']['E'], 'Y')
 
-    @mock.patch('framework.util_mdtf.check_required_dirs')
+    @mock.patch('framework.configs.check_required_dirs')
     def test_set_mdtf_env_vars_config_settings(self, mock_check_required_dirs):
         # NB env vars now only written to OS by pod's setUp (not here)
         # set settings from config file
@@ -46,7 +46,7 @@ class TestMDTFArgParsing(unittest.TestCase):
         mdtf.set_mdtf_env_vars()
         self.assertEqual(mdtf.config['envvars']['E'], 'F')      
 
-    @mock.patch('framework.util_mdtf.check_required_dirs')
+    @mock.patch('framework.configs.check_required_dirs')
     def test_sset_mdtf_env_vars_config_rgb(self, mock_check_required_dirs):
         # NB env vars now only written to OS by pod's setUp (not here)
         # set path to /RGB from os.environ

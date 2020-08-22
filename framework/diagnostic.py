@@ -2,25 +2,10 @@ import os
 import glob
 import logging
 import shutil
+from framework import configs, verify_links
 from framework import util
-from framework import util_mdtf
-from framework import verify_links
 
 _log = logging.getLogger(__name__)
-
-class PodRequirementFailure(Exception):
-    """Exception raised if POD doesn't have required resoruces to run. 
-    """
-    def __init__(self, pod, msg=None):
-        self.pod = pod
-        self.msg = msg
-
-    def __str__(self):
-        if self.msg is not None:
-            return ("Requirements not met for {0}."
-                "\nReason: {1}.").format(self.pod.name, self.msg)
-        else:
-            return 'Requirements not met for {}.'.format(self.pod.name)
 
 class Diagnostic(object):
     """Class holding configuration for a diagnostic script.
@@ -53,7 +38,7 @@ class Diagnostic(object):
         Args:
             pod_name (:py:obj:`str`): Name of the POD to initialize.
         """
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         assert pod_name in config.pods
         # define attributes manually so linter doesn't complain
         # others are set in _parse_pod_settings
@@ -113,7 +98,7 @@ class Diagnostic(object):
         elif not d.get('convention', None):
             d['convention'] = 'CF'
         for key, val in iter(d['runtime_requirements'].items()):
-            d['runtime_requirements'][key] = util.coerce_to_iter(val)
+            d['runtime_requirements'][key] = util.to_iter(val)
         _log.debug("%s settings: %s", self.name, d)
         return d
 
@@ -139,7 +124,7 @@ class Diagnostic(object):
             if 'alternates' not in var:
                 varlist[i]['alternates'] = []
             else:
-                varlist[i]['alternates'] = util.coerce_to_iter(var['alternates'])
+                varlist[i]['alternates'] = util.to_iter(var['alternates'])
         _log.debug("%s varlist: %s", self.name, varlist)
         return varlist
 
@@ -161,7 +146,7 @@ class Diagnostic(object):
             multiple languages) so the validation must take place in that 
             subprocess.
 
-        Raises: :exc:`~diagnostic.PodRequirementFailure` if requirements
+        Raises: :exc:`~util.exceptions.PodRequirementFailure` if requirements
             aren't met. This is re-raised from the 
             :meth:`~diagnostic.Diagnostic._check_pod_driver` and
             :meth:`~diagnostic.Diagnostic._check_for_varlist_files` 
@@ -172,7 +157,7 @@ class Diagnostic(object):
         if isinstance(self.skipped, Exception):
             # already encountered reason we can't run this, re-raise it here 
             # to log it
-            raise PodRequirementFailure(self,
+            raise util.PodRequirementFailure(self,
                 "Caught {} exception:\n{}".format(
                     type(self.skipped).__name__, self.skipped
                 ))
@@ -184,13 +169,13 @@ class Diagnostic(object):
             self.found_files = found_files
             self.missing_files = missing_files
             if missing_files:
-                raise PodRequirementFailure(self,
+                raise util.PodRequirementFailure(self,
                     "Couldn't find required model data files:\n{}".format(
                         "\n".join(missing_files)
                     ))
             else:
                 _log.debug("%s: No known missing required input files", self.name)
-        except PodRequirementFailure as exc:
+        except util.PodRequirementFailure as exc:
             _log.warning(getattr(exc, 'msg', repr(exc)))
             raise exc
 
@@ -206,7 +191,7 @@ class Diagnostic(object):
         # Set env vars POD has inherited globally and from current case 
         # (set in DataManager._setup_pod).
         for key, val in iter(self.pod_env_vars.items()):
-            util_mdtf.setenv(key, val, self.pod_env_vars, overwrite=True) 
+            util.setenv(key, val, self.pod_env_vars, overwrite=True) 
 
         # Set env vars for variable and axis names:
         axes = dict()
@@ -235,18 +220,18 @@ class Diagnostic(object):
                 elif axes[envvar_name] != ax_name \
                     and ax_status[envvar_name] == set_from_axis:
                     # names found in two different files disagree - raise error
-                    raise PodRequirementFailure(self,
+                    raise util.PodRequirementFailure(self,
                         ("Two variables have conflicting axis names {}:"
                             "({}!={})").format(
                                 envvar_name, axes[envvar_name], ax_name
                     ))
         for key, val in iter(axes.items()): 
-            util_mdtf.setenv(key, val, self.pod_env_vars)
+            util.setenv(key, val, self.pod_env_vars)
 
     def _setup_pod_directories(self):
         """Private method called by :meth:`~diagnostic.Diagnostic.setUp`.
         """
-        util_mdtf.check_required_dirs(
+        util.check_required_dirs(
             already_exist = [self.POD_CODE_DIR, self.POD_OBS_DATA], 
             create_if_nec = [self.POD_WK_DIR], 
         )
@@ -259,11 +244,11 @@ class Diagnostic(object):
     def _check_pod_driver(self):
         """Private method called by :meth:`~diagnostic.Diagnostic.setUp`.
 
-        Raises: :exc:`~diagnostic.PodRequirementFailure` if driver script
+        Raises: :exc:`~util.exceptions.PodRequirementFailure` if driver script
             can't be found.
         """
         _log.debug("%s received POD settings: %s", self.name, self.__dict__)
-        programs = util_mdtf.get_available_programs()
+        programs = util.get_available_programs()
 
         if self.driver == '':  
             _log.warning("No valid driver entry found for %s", self.name)
@@ -287,7 +272,7 @@ class Diagnostic(object):
                 else:
                     _log.debug("%s: %s not found...", self.name, try_path)
         if self.driver == '':
-            raise PodRequirementFailure(self, 
+            raise util.PodRequirementFailure(self, 
                 """No driver script found in {}. Specify 'driver' in 
                 settings.jsonc.""".format(self.POD_CODE_DIR)
                 )
@@ -295,7 +280,7 @@ class Diagnostic(object):
         if not os.path.isabs(self.driver): # expand relative path
             self.driver = os.path.join(self.POD_CODE_DIR, self.driver)
         if not os.path.exists(self.driver):
-            raise PodRequirementFailure(self, 
+            raise util.PodRequirementFailure(self, 
                 "Unable to locate driver script {}.".format(self.driver)
                 )
 
@@ -304,7 +289,7 @@ class Diagnostic(object):
             driver_ext  = self.driver.split('.')[-1]
             # Possible error: Driver file type unrecognized
             if driver_ext not in programs:
-                raise PodRequirementFailure(self, 
+                raise util.PodRequirementFailure(self, 
                     ("Don't know how to call a .{} file.\n"
                     "Supported programs: {}").format(driver_ext, programs)
                 )
@@ -438,7 +423,7 @@ class Diagnostic(object):
         POD_WK_DIR, respecting subdirectory structure (see doc for
         :func:`~util.recursive_copy`).
         """
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         template = config.global_envvars.copy()
         template.update(self.pod_env_vars)
         source_files = util.find_files(self.POD_CODE_DIR, '*.html')
@@ -446,7 +431,7 @@ class Diagnostic(object):
             source_files,
             self.POD_CODE_DIR,
             self.POD_WK_DIR,
-            copy_function=lambda mdtf, dest: util_mdtf.append_html_template(
+            copy_function=lambda mdtf, dest: util.append_html_template(
                 mdtf, dest, template_dict=template, append=False
             ),
             overwrite=True
@@ -474,7 +459,7 @@ class Diagnostic(object):
             # report error
             mdtf = os.path.join(src_dir, 'pod_error_snippet.html')
             template_dict['error_text'] = str(error)
-        util_mdtf.append_html_template(mdtf, self.TEMP_HTML, template_dict)
+        util.append_html_template(mdtf, self.TEMP_HTML, template_dict)
 
     def verify_pod_links(self):
         """Check for missing files linked to from POD's html page.
@@ -494,7 +479,7 @@ class Diagnostic(object):
             _log.error('%s', str(missing_out))
             template_dict = self.__dict__.copy()
             template_dict['missing_output'] = '<br>'.join(missing_out)
-            util_mdtf.append_html_template(
+            util.append_html_template(
                 os.path.join(self.code_root,'framework','html','pod_missing_snippet.html'),
                 self.TEMP_HTML, template_dict
             )
@@ -517,7 +502,7 @@ class Diagnostic(object):
             dest_subdir: Subdirectory tree of `POD_WK_DIR` to move converted 
                 bitmap files to.
         """
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         abs_src_subdir = os.path.join(self.POD_WK_DIR, src_subdir)
         abs_dest_subdir = os.path.join(self.POD_WK_DIR, dest_subdir)
         files = util.find_files(
@@ -568,10 +553,10 @@ class Diagnostic(object):
         digested observational data), 3) removes vector graphics if requested,
         4) removes netCDF scratch files in `POD_WK_DIR` if requested.
 
-        Settings are set at runtime, when :class:`~util_mdtf.ConfigManager` is 
+        Settings are set at runtime, when :class:`~configs.ConfigManager` is 
         initialized.
         """
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         # copy PDF documentation (if any) to output
         files = util.find_files(os.path.join(self.POD_CODE_DIR, 'doc'), '*.pdf')
         for f in files:

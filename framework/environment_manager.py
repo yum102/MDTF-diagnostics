@@ -7,9 +7,8 @@ import atexit
 import signal
 from abc import ABCMeta, abstractmethod
 import subprocess
+from framework import configs
 from framework import util
-from framework import util_mdtf
-from framework.diagnostic import PodRequirementFailure
 
 _log = logging.getLogger(__name__)
 
@@ -17,7 +16,7 @@ class EnvironmentManager(object, metaclass=ABCMeta):
     # analogue of TestSuite in xUnit - abstract base class
 
     def __init__(self):
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         self.test_mode = config.config.test_mode
         self.pods = []
         self.envs = set()
@@ -76,7 +75,7 @@ class EnvironmentManager(object, metaclass=ABCMeta):
 
             try:
                 pod.setUp()
-            except PodRequirementFailure as exc:
+            except util.PodRequirementFailure as exc:
                 log_str = "Skipping execution of {}.\nReason: {}\n".format(
                     exc.pod.name, str(exc))
                 pod.logfile_obj.write(log_str)
@@ -127,7 +126,7 @@ class EnvironmentManager(object, metaclass=ABCMeta):
             stdout = subprocess.STDOUT
         if stderr is None:
             stderr = subprocess.STDOUT
-        run_cmds = util.coerce_to_iter(cmd_list, list)
+        run_cmds = util.to_iter(cmd_list, list)
         if self.test_mode:
             run_cmds = ['echo "TEST MODE: call {}"'.format('; '.join(run_cmds))]
         commands = self.activate_env_commands(env_name) \
@@ -190,7 +189,7 @@ class VirtualenvEnvironmentManager(EnvironmentManager):
     def __init__(self):
         super(VirtualenvEnvironmentManager, self).__init__()
 
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         self.venv_root = config.paths.get('venv_root', '')
         self.r_lib_root = config.paths.get('r_lib_root', '')
 
@@ -280,7 +279,7 @@ class CondaEnvironmentManager(EnvironmentManager):
     def __init__(self):
         super(CondaEnvironmentManager, self).__init__()
 
-        config = util_mdtf.ConfigManager()
+        config = configs.ConfigManager()
         self.code_root = config.paths.CODE_ROOT
         self.conda_dir = os.path.join(self.code_root, 'framework','conda')
         self.env_list = []

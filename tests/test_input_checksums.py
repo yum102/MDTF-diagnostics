@@ -2,7 +2,7 @@ import os
 import sys
 import unittest
 from framework.util import read_json
-from tests import shared_test_utils as shared
+from . import checksum_shared as shared
 
 DOING_TRAVIS = (os.environ.get('TRAVIS', False) == 'true')
 DOING_MDTF_DATA_TESTS = ('--data_tests' in sys.argv)

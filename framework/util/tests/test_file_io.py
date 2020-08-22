@@ -1,44 +1,90 @@
 import os
 import unittest
-from collections import namedtuple
-import itertools
-import mock # define mock os.environ so we don't mess up real env vars
-from framework import util_mdtf
-from framework.data_manager import DataManager
-from framework.diagnostic import Diagnostic
-from subprocess import CalledProcessError
-from tests.shared_test_utils import setUp_ConfigManager, tearDown_ConfigManager
+import unittest.mock as mock # define mock os.environ so we don't mess up real env vars
+from framework.util import file_io
 
-class TestUtil(unittest.TestCase):
+class TestJSON(unittest.TestCase):
+    def test_parse_json_basic(self):
+        s = """{
+            "a" : "test_string",
+            "b" : 3,
+            "c" : false,
+            "d" : [1,2,3],
+            "e" : {
+                "aa" : [4,5,6],
+                "bb" : true
+            }
+        }
+        """
+        d = file_io.parse_json(s)
+        self.assertEqual(set(d.keys()), set(['a','b','c','d','e']))
+        self.assertEqual(d['a'], "test_string")
+        self.assertEqual(d['b'], 3)
+        self.assertEqual(d['c'], False)
+        self.assertEqual(len(d['d']), 3)
+        self.assertEqual(d['d'], [1,2,3])
+        self.assertEqual(set(d['e'].keys()), set(['aa','bb']))
+        self.assertEqual(len(d['e']['aa']), 3)
+        self.assertEqual(d['e']['aa'], [4,5,6])
+        self.assertEqual(d['e']['bb'], True)
+
+    def test_parse_json_comments(self):
+        s = """
+        // comment 1
+        // comment 1.1 // comment 1.2 // comment 1.3
+
+        { // comment 1.5
+            // comment 2
+            "a" : 1, // comment 3
+
+            "b // c" : "// d x ////", // comment 4
+            "e" : false,
+            // comment 5 "quotes in a comment"
+            "f": "ff" // comment 6 " unbalanced quote in a comment
+        } // comment 7
+
+        """
+        d = file_io.parse_json(s)
+        self.assertEqual(set(d.keys()), set(['a','b // c','e','f']))
+        self.assertEqual(d['a'], 1)
+        self.assertEqual(d['b // c'], "// d x ////")
+        self.assertEqual(d['e'], False)
+        self.assertEqual(d['f'], "ff")
+
+    def test_write_json(self):
+        pass
+
+
+class TestEnvVars(unittest.TestCase):
     @mock.patch.dict('os.environ', {'TEST_OVERWRITE': 'A'})
     def test_setenv_overwrite(self):
         test_d = {'TEST_OVERWRITE': 'A'}
-        util_mdtf.setenv('TEST_OVERWRITE','B', test_d, overwrite = False)
+        file_io.setenv('TEST_OVERWRITE','B', test_d, overwrite = False)
         self.assertEqual(test_d['TEST_OVERWRITE'], 'A')
         self.assertEqual(os.environ['TEST_OVERWRITE'], 'A')
 
     @mock.patch.dict('os.environ', {})
     def test_setenv_str(self):
         test_d = {}
-        util_mdtf.setenv('TEST_STR','B', test_d)
+        file_io.setenv('TEST_STR','B', test_d)
         self.assertEqual(test_d['TEST_STR'], 'B')
         self.assertEqual(os.environ['TEST_STR'], 'B')
 
     @mock.patch.dict('os.environ', {})
     def test_setenv_int(self):
         test_d = {}        
-        util_mdtf.setenv('TEST_INT',2019, test_d)
+        file_io.setenv('TEST_INT',2019, test_d)
         self.assertEqual(test_d['TEST_INT'], 2019)
         self.assertEqual(os.environ['TEST_INT'], '2019')
 
     @mock.patch.dict('os.environ', {})
     def test_setenv_bool(self):
         test_d = {}
-        util_mdtf.setenv('TEST_TRUE',True, test_d)
+        file_io.setenv('TEST_TRUE',True, test_d)
         self.assertEqual(test_d['TEST_TRUE'], True)
         self.assertEqual(os.environ['TEST_TRUE'], '1')
 
-        util_mdtf.setenv('TEST_FALSE',False, test_d)
+        file_io.setenv('TEST_FALSE',False, test_d)
         self.assertEqual(test_d['TEST_FALSE'], False)
         self.assertEqual(os.environ['TEST_FALSE'], '0')
 
@@ -48,7 +94,7 @@ class TestUtil(unittest.TestCase):
     def test_check_required_envvar_found(self):
         # exit function normally if all variables found
         try:
-            util_mdtf.check_required_envvar('A', 'C')
+            file_io.check_required_envvar('A', 'C')
         except SystemExit:
             self.fail()
 
@@ -56,17 +102,16 @@ class TestUtil(unittest.TestCase):
     # def test_check_required_envvar_not_found(self):
     #     # try to exit() if any variables not found
     #     print('\nXXXX', os.environ['A'],  os.environ['E'], '\n')
-    #     self.assertRaises(SystemExit, util_mdtf.check_required_envvar, 'A', 'E')
+    #     self.assertRaises(SystemExit, file_io.check_required_envvar, 'A', 'E')
 
-    # ---------------------------------------------------
-
+class TestReqDirs(unittest.TestCase):
     @mock.patch('os.path.exists', return_value = True)
     @mock.patch('os.makedirs')
     def test_check_required_dirs_found(self, mock_makedirs, mock_exists):
         # exit function normally if all directories found 
         try:
-            util_mdtf.check_required_dirs(['DIR1'], [])
-            util_mdtf.check_required_dirs([], ['DIR2'])
+            file_io.check_required_dirs(['DIR1'], [])
+            file_io.check_required_dirs([], ['DIR2'])
         except SystemExit:
             self.fail()
         mock_makedirs.assert_not_called()
@@ -75,7 +120,7 @@ class TestUtil(unittest.TestCase):
     @mock.patch('os.makedirs')
     def test_check_required_dirs_not_found(self, mock_makedirs, mock_exists):
         # try to exit() if any directories not found
-        self.assertRaises(OSError, util_mdtf.check_required_dirs, ['DIR1XXX'], [])
+        self.assertRaises(OSError, file_io.check_required_dirs, ['DIR1XXX'], [])
         mock_makedirs.assert_not_called()
 
     @mock.patch('os.path.exists', return_value = False)
@@ -83,11 +128,13 @@ class TestUtil(unittest.TestCase):
     def test_check_required_dirs_not_found_created(self, mock_makedirs, mock_exists):      
         # don't exit() and call os.makedirs if in create_if_nec          
         try:
-            util_mdtf.check_required_dirs([], ['DIR2'])
+            file_io.check_required_dirs([], ['DIR2'])
         except SystemExit:
             self.fail()
         mock_makedirs.assert_called_once_with('DIR2')
 
+
+class TestBumpVersion(unittest.TestCase):
     @mock.patch('os.path.exists', return_value=False)
     def test_bump_version_noexist(self, mock_exists):
         for f in [
@@ -95,7 +142,7 @@ class TestUtil(unittest.TestCase):
             'D/C/B/AAAA.v23/', 'A.foo', 'A.v23.foo', 'A.v23.bar.v45.foo',
             'D/C/A.foo', 'D/C/A.v23.foo', 'D/C/A.v23.bar.v45.foo'
         ]:
-            f2, _ = util_mdtf.bump_version(f)
+            f2, _ = file_io.bump_version(f)
             self.assertEqual(f, f2)
 
     @mock.patch('os.path.exists', return_value=False)
@@ -104,7 +151,7 @@ class TestUtil(unittest.TestCase):
             'AAA.v42', 'D/C/B/AAA.v42', 'D/C.v7/B/AAAA.v42/', 'A.v42.foo', 
             'A.v23.bar.v42.foo', 'D/C/A.v42.foo', 'D/C/A.v23.bar.v42.foo'
         ]:
-            _, ver = util_mdtf.bump_version(f)
+            _, ver = file_io.bump_version(f)
             self.assertEqual(ver, 42)
 
     @mock.patch('os.path.exists', return_value=False)
@@ -117,7 +164,7 @@ class TestUtil(unittest.TestCase):
             ('D/C/A.foo','D/C/A.foo'), ('D/C.v1/A234.v3.foo','D/C.v1/A234.foo'),
             ('D/C/A.v23.bar.v45.foo','D/C/A.v23.bar.foo')
         ]:
-            f1, ver = util_mdtf.bump_version(f[0], new_v=0)
+            f1, ver = file_io.bump_version(f[0], new_v=0)
             self.assertEqual(f1, f[1])
             self.assertEqual(ver, 0)
 
@@ -131,7 +178,7 @@ class TestUtil(unittest.TestCase):
             ('D/C/A.foo','D/C/A.v42.foo'), ('D/C.v1/A.v23.foo','D/C.v1/A.v42.foo'),
             ('D/C/A.v23.bar.v45.foo','D/C/A.v23.bar.v42.foo')
         ]:
-            f1, ver = util_mdtf.bump_version(f[0], new_v=42)
+            f1, ver = file_io.bump_version(f[0], new_v=42)
             self.assertEqual(f1, f[1])
             self.assertEqual(ver, 42)
 
@@ -144,7 +191,7 @@ class TestUtil(unittest.TestCase):
     #         ('D/C.v1/B/AA/','D/C.v1/B/AA.v1/',1), ('D/C/B/AA.v23','D/C/B/AA.v24',24),
     #         ('D/C3/B.v8/AA.v9/','D/C3/B.v8/AA.v10/',10)
     #     ]:
-    #         f1, ver = util_mdtf.bump_version(f[0])
+    #         f1, ver = file_io.bump_version(f[0])
     #         self.assertEqual(f1, f[1])
     #         self.assertEqual(ver, f[2])
 
@@ -157,158 +204,14 @@ class TestUtil(unittest.TestCase):
     #         ('D/C.v1/A.v99.foo','D/C.v1/A.v100.foo', 100),
     #         ('D/C/A.v23.bar.v78.foo','D/C/A.v23.bar.v79.foo', 79)
     #     ]:
-    #         f1, ver = util_mdtf.bump_version(f[0])
+    #         f1, ver = file_io.bump_version(f[0])
     #         self.assertEqual(f1, f[1])
     #         self.assertEqual(ver, f[2])
 
 
-class TestVariableTranslator(unittest.TestCase):
-    def setUp(self):
-        # set up translation dictionary without calls to filesystem
-        setUp_ConfigManager()
-
-    def tearDown(self):
-        # call _reset method deleting clearing Translator for unit testing, 
-        # otherwise the second, third, .. tests will use the instance created 
-        # in the first test instead of being properly initialized
-        tearDown_ConfigManager()
-
-    @mock.patch('framework.util_mdtf.util.read_json', return_value = {
-        'convention_name':'not_CF',
-        'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
-    })
-    def test_variabletranslator(self, mock_read_json):
-        temp = util_mdtf.VariableTranslator(unittest = True)
-        self.assertEqual(temp.toCF('not_CF', 'PRECT'), 'pr_var')
-        self.assertEqual(temp.fromCF('not_CF', 'pr_var'), 'PRECT')
-
-    @mock.patch('framework.util_mdtf.util.read_json', return_value = {
-        'convention_name':'not_CF',
-        'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
-    })
-    def test_variabletranslator_cf(self, mock_read_json):
-        temp = util_mdtf.VariableTranslator(unittest = True)
-        self.assertEqual(temp.toCF('CF', 'pr_var'), 'pr_var')
-        self.assertEqual(temp.fromCF('CF', 'pr_var'), 'pr_var')
-
-    @mock.patch('framework.util_mdtf.util.read_json', return_value = {
-        'convention_name':'not_CF',
-        'var_names':{'pr_var': 'PRECT', 'prc_var':'PRECC'}
-    })
-    def test_variabletranslator_no_key(self, mock_read_json):
-        temp = util_mdtf.VariableTranslator(unittest = True)
-        self.assertRaises(AssertionError, temp.toCF, 'B', 'PRECT')
-        self.assertRaises(KeyError, temp.toCF, 'not_CF', 'nonexistent_var')
-        self.assertRaises(AssertionError, temp.fromCF, 'B', 'PRECT')
-        self.assertRaises(KeyError, temp.fromCF, 'not_CF', 'nonexistent_var')
-
-class TestVariableTranslatorReadFiles(unittest.TestCase):
-    def setUp(self):
-        # set up translation dictionary without calls to filesystem
-        setUp_ConfigManager()
-
-    def tearDown(self):
-        tearDown_ConfigManager()
-
-    @mock.patch('framework.util_mdtf.util.read_json', return_value = {
-        'convention_name':'A','var_names':{'B':'D'}
-    })
-    def test_read_model_varnames(self, mock_read_json):
-        # normal operation - convert string to list
-        temp = util_mdtf.VariableTranslator(unittest = True)
-        self.assertEqual(temp.fromCF('A','B'), 'D')
-        temp._reset()
-
-    @mock.patch('framework.util_mdtf.util.read_json', return_value = {
-        'convention_name':['A','C'],'var_names':{'B':'D'}
-    })
-    def test_read_model_varnames_multiple(self, mock_read_json):
-        # create multiple entries when multiple models specified
-        temp = util_mdtf.VariableTranslator(unittest = True)
-        self.assertEqual(temp.fromCF('A','B'), 'D')
-        self.assertEqual(temp.fromCF('C','B'), 'D')
-        temp._reset()
-
-class TestPathManager(unittest.TestCase):
-    # pylint: disable=maybe-no-member
-    def setUp(self):
-        # set up translation dictionary without calls to filesystem
-        setUp_ConfigManager(paths = {
-            'CODE_ROOT':'A', 'OBS_DATA_ROOT':'B', 'MODEL_DATA_ROOT':'C',
-            'WORKING_DIR':'D', 'OUTPUT_DIR':'E'
-        })
-
-    def tearDown(self):
-        tearDown_ConfigManager()
-
-    # ------------------------------------------------
-
-    @unittest.skip("")
-    def test_pathmgr_global(self):
-        config = util_mdtf.ConfigManager()
-        self.assertEqual(config.paths.CODE_ROOT, 'A')
-        self.assertEqual(config.paths.OUTPUT_DIR, 'E')
-
-    @unittest.skip("")
-    def test_pathmgr_global_asserterror(self):
-        d = {
-            'OBS_DATA_ROOT':'B', 'MODEL_DATA_ROOT':'C',
-            'WORKING_DIR':'D', 'OUTPUT_DIR':'E'
-        }
-        config = util_mdtf.ConfigManager()
-        self.assertRaises(AssertionError, config.paths.parse, d, list(d.keys()))
-        # initialize successfully so that tearDown doesn't break
-        #_ = util_mdtf.PathManager(unittest = True) 
-
-    def test_pathmgr_global_testmode(self):
-        config = util_mdtf.ConfigManager()
-        self.assertEqual(config.paths.CODE_ROOT, 'TEST_CODE_ROOT')
-        self.assertEqual(config.paths.OUTPUT_DIR, 'TEST_OUTPUT_DIR')
-
-
-@mock.patch.multiple(DataManager, __abstractmethods__=set())
-class TestPathManagerPodCase(unittest.TestCase):
-    def setUp(self):
-        # set up translation dictionary without calls to filesystem
-        setUp_ConfigManager(
-            config=self.case_dict, 
-            paths={
-                'CODE_ROOT':'A', 'OBS_DATA_ROOT':'B', 'MODEL_DATA_ROOT':'C',
-                'WORKING_DIR':'D', 'OUTPUT_DIR':'E'
-            },
-            pods={ 'AA':{
-                'settings':{}, 
-                'varlist':[{'var_name': 'pr_var', 'freq':'mon'}]
-                }
-            })
-
-    case_dict = {
-        'CASENAME': 'A', 'model': 'B', 'FIRSTYR': 1900, 'LASTYR': 2100,
-        'pod_list': ['AA']
-    }
-
-    def tearDown(self):
-        tearDown_ConfigManager()
-
-    def test_pathmgr_model(self):
-        config = util_mdtf.ConfigManager()
-        case = DataManager(self.case_dict)
-        d = config.paths.model_paths(case)
-        self.assertEqual(d['MODEL_DATA_DIR'], 'TEST_MODEL_DATA_ROOT/A')
-        self.assertEqual(d['MODEL_WK_DIR'], 'TEST_WORKING_DIR/MDTF_A_1900_2100')
-
-    def test_pathmgr_pod(self):
-        config = util_mdtf.ConfigManager()
-        case = DataManager(self.case_dict)
-        pod = Diagnostic('AA')
-        d = config.paths.pod_paths(pod, case)
-        self.assertEqual(d['POD_CODE_DIR'], 'TEST_CODE_ROOT/diagnostics/AA')
-        self.assertEqual(d['POD_OBS_DATA'], 'TEST_OBS_DATA_ROOT/AA')
-        self.assertEqual(d['POD_WK_DIR'], 'TEST_WORKING_DIR/MDTF_A_1900_2100/AA')
-
 class TestDoubleBraceTemplate(unittest.TestCase):
     def sub(self, template_text, template_dict=dict()):
-        tmp = util_mdtf._DoubleBraceTemplate(template_text)
+        tmp = file_io._DoubleBraceTemplate(template_text)
         return tmp.safe_substitute(template_dict)
 
     def test_escaped_brace_1(self):
@@ -380,7 +283,6 @@ class TestDoubleBraceTemplate(unittest.TestCase):
             "{{FOO\n{{  foo }asdf}}\tBARbaz_bar"
             )
 
-# ---------------------------------------------------
 
 if __name__ == '__main__':
     unittest.main()
