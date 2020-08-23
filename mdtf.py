@@ -35,8 +35,8 @@ def _find_config_file(site_dir, fmwk_dir, config_type):
 # get root logger and set up temporary log cache for catching pre-config errors
 logging.captureWarnings(True)
 _log = logging.getLogger()
-_log.setLevel(logging.DEBUG)
-temp_log_cache = logs.MultiFlushMemoryHandler(1024*32, flushOnClose=False)
+_log.setLevel(logging.NOTSET)
+temp_log_cache = logs.MultiFlushMemoryHandler(1024*16, flushOnClose=False)
 _log.addHandler(temp_log_cache)
 
 # get dir containing this script:

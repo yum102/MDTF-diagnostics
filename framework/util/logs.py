@@ -272,27 +272,107 @@ def git_info():
         git_hash = "<couldn't get git hash>"
     return (git_branch, git_hash, git_dirty)
 
+def _set_console_log_level(d, stdout_level, stderr_level, filter_=True):
+    """Configure log levels for handlers writing to stdout and stderr.
 
-def mdtf_log_config(config_path, temp_log_cache, root_logger):
+    Levels are asummed to follow Python's numerical scale; see 
+    `https://docs.python.org/3.7/library/logging.html#logging-levels`__.
+
+    Args:
+        d (dict): Nested dict read from the log configuration file.
+        stdout_level (int): New log level to impose on handlers writing to stdout.
+            If 'None', deactivates these handlers.
+        stderr_level (int): New log level to impose on handlers writing to stderr.
+            If 'None', deactivates these handlers.
+        filter_ (bool, default True): If true, apply :py:class:`logging.Filter`s
+            to ensure that every log message is written to at most one of stdout
+            or stderr (in standard usage, this means errors are written to stderr
+            only).
+    """
+    def _set_handler_level(dd, type_, new_lev, new_filt):
+        if 'handlers' not in d or 'root' not in d:
+            _log.warning('No loggers configured.')
+            return
+        handlers = d['handlers']
+        type_handlers = [hk for (hk, hv) in handlers.items() \
+            if hv.get('stream','').lower().endswith(type_)]
+        print('#', type_, type_handlers)
+        if len(type_handlers) > 1:
+            _log.warning('More than one handler using %s: %s', type_, type_handlers)
+        if new_lev is None:
+            _log.debug('Logging to %s suppressed.', type_)
+            for hk in type_handlers:
+                del handlers[hk]
+            new_root_handlers = set(d['root'].get('handlers', []))
+            d['root']['handlers'] = list(new_root_handlers.difference(type_handlers))
+        else:
+            for hk in type_handlers:
+                handlers[hk]['level'] = new_lev
+                if new_filt:
+                    _ = handlers[hk].setdefault('filters', [])
+                    handlers[hk]['filters'].append(new_filt)
+
+    if filter_ and stdout_level is not None and stderr_level is not None:
+        filter_lev = max(stdout_level, stderr_level)
+        _ = d.setdefault('filters', dict())
+        d['filters'].update({
+            "_geq_level_filter": {"()": GeqLevelFilter, "level": filter_lev},
+            "_lt_level_filter": {"()": LtLevelFilter, "level": filter_lev}
+        })
+        if stdout_level < stderr_level:
+            stdout_filt, stderr_filt = ("_lt_level_filter", "_geq_level_filter")
+        else:
+            stdout_filt, stderr_filt = ("_geq_level_filter", "_lt_level_filter")
+    else:
+        stdout_filt, stderr_filt = (None, None)
+
+    if 'handlers' in d:
+        _set_handler_level(d['handlers'], 'stdout', stdout_level, stdout_filt)
+        _set_handler_level(d['handlers'], 'stderr', stderr_level, stderr_filt)
+
+def mdtf_log_config(config_path, root_logger, cli_d=None):
     """Wrapper to handle logger configuration from a file and transfer of the 
     temporary log cache to the newly-configured loggers.
 
     Args:
         config_path (str): Path to the logger configuration file. This is taken
-            to be in .jsonc formats, following the :py:mod:`logging` ``dictConfig``
+            to be in .jsonc format, following the :py:mod:`logging` ``dictConfig``
             `schema <https://docs.python.org/3.7/library/logging.config.html#logging-config-dictschema>`__.
-        temp_log_cache (:py:class:`logging.Handler`): Log handler that's been 
-            caching any logged events issued before we configured the loggers.
         root_logger (:py:class:`logging.Logger`): Framework's root logger, to
-            which temp_log_cache was attached.
+            which the temporary log cache was attached.
+        cli_d (dict): Dict of parsed CLI settings.
     """
+    # temporary cache handler should be the only handler attached to root_logger
+    # as of now
+    if len(root_logger.handlers) > 1 \
+        or not isinstance(root_logger.handlers[0], MultiFlushMemoryHandler):
+        _log.error("Unexpected handlers attached to root: %s", root_logger.handlers)
+    temp_log_cache = root_logger.handlers[0]
+
+    # set verbosity level
+    if not cli_d or not (cli_d.get('verbose',0) or cli_d.get('quiet',0)):
+        # default case: INFO to stdout, WARNING and ERROR to stderr
+        stdout_level, stderr_level = (logging.INFO, logging.WARNING)
+    elif cli_d.get('verbose',0) >= 1:
+        stdout_level, stderr_level = (logging.DEBUG, logging.WARNING)
+    elif cli_d.get('quiet',0) >= 1:
+        stdout_level, stderr_level = (None, logging.WARNING)
+    elif cli_d.get('quiet',0) >= 2:
+        stdout_level, stderr_level = (None, logging.ERROR)
+    elif cli_d.get('quiet',0) >= 3:
+        stdout_level, stderr_level = (None, None)
+    else:
+        stdout_level, stderr_level = (logging.INFO, logging.WARNING)
+
+    # read the config file, munge it according to CLI settings, configure loggers
     try:
         log_config = read_json(config_path)
+        _set_console_log_level(log_config, stdout_level, stderr_level)
         logging.config.dictConfig(log_config)
     except Exception as exc:
         _log.exception("Logging config failed.")
 
-    # transfer cache contents to configured loggers and shut down cache
+    # transfer cache contents to newly-configured loggers and delete it
     temp_log_cache.transfer_to_all(root_logger)
     temp_log_cache.close()
     root_logger.removeHandler(temp_log_cache)

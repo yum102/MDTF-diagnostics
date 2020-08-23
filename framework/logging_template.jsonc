@@ -7,34 +7,36 @@
   "root": {
     "level" : "NOTSET",
     // define additional handlers in the section below and add them to this list
-    "handlers": ["console_stdout","console_stderr", "file"]
+    "handlers": ["console_stdout","console_stderr", "mdtf_log_file"]
   },
   "handlers": {
-    "console_stdout": {
-      // writes INFO and DEBUG statements to stdout
-      "class": "logging.StreamHandler",
-      "formatter": "console_stdout",
-      "level" : "DEBUG",
-      "filters": ["lt_warning_filter"],
-      "stream" : "ext://sys.stdout"
-    },
-    "console_stderr": {
-      // writes WARNING and ERROR statements to stderr
-      "class": "logging.StreamHandler",
-      "formatter": "console_stderr",
-      "level" : "WARNING",
-      "filters": ["geq_warning_filter"],
-      "stream" : "ext://sys.stderr"
-    },
-    "output_file": {
+    "mdtf_log_file": {
       // writes all log events to file saved along with run in WKDIR
       // This is linked to from index.html, so don't change the filename
       "()": "framework.util.logs.DebugHeaderFileHandler",
       "filename": "test.log",
       "level" : "DEBUG",
-      "formatter": "output_file",
+      "formatter": "mdtf_log_file",
       "mode": "w",
       "encoding": "utf-8"
+    },
+    "console_stdout": {
+      // writes INFO statements to stdout
+      // verbosity level set from CLI (--verbose/--quiet) by 
+      // framework.util.logs._set_console_log_level
+      "class": "logging.StreamHandler",
+      "formatter": "console_stdout",
+      "level" : "INFO",
+      "stream" : "ext://sys.stdout"
+    },
+    "console_stderr": {
+      // writes WARNING and ERROR statements to stderr
+      // verbosity level set from CLI (--verbose/--quiet) by 
+      // framework.util.logs._set_console_log_level
+      "class": "logging.StreamHandler",
+      "formatter": "console_stderr",
+      "level" : "WARNING",
+      "stream" : "ext://sys.stderr"
     }
   },
   "formatters": {
@@ -44,7 +46,7 @@
     "console_stderr": {
       "format": "STDERR: %(asctime)s %(message)s"
     },
-    "output_file": {
+    "mdtf_log_file": {
       "()": "framework.util.logs.HangingIndentFormatter",
       "format": "%(asctime)s - %(levelname)s @ %(funcName)s [%(filename)s line %(lineno)d]:\n%(message)s",
       "datefmt": "%Y-%m-%d %H:%M:%S",
@@ -52,16 +54,6 @@
       "tabsize": 3,
       "header": "",
       "footer": "\n"
-    }
-  },
-  "filters": {
-    "geq_warning_filter": {
-      "()": "framework.util.logs.GeqLevelFilter",
-      "level": "WARNING"
-    },
-    "lt_warning_filter": {
-      "()": "framework.util.logs.LtLevelFilter",
-      "level": "WARNING"
     }
   }
 }

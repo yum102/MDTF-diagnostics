@@ -280,8 +280,14 @@
         {
           "name": "verbose",
           "short_name": "v",
-          "help": "Increase log verbosity level.",
-          "default" : 1, 
+          "help": "Increase console log verbosity level. -v prints debug information.",
+          "default" : 0, 
+          "action": "count" 
+        },{
+          "name": "quiet",
+          "short_name": "q",
+          "help": "Decrease console log verbosity level. -q prints warnings only, -qq prints errors only, and -qqq prints no output.",
+          "default" : 0, 
           "action": "count" 
         },{
           "name": "test_mode",
