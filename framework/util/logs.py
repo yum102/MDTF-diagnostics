@@ -330,7 +330,29 @@ def _set_console_log_level(d, stdout_level, stderr_level, filter_=True):
         _set_handler_level(d['handlers'], 'stdout', stdout_level, stdout_filt)
         _set_handler_level(d['handlers'], 'stderr', stderr_level, stderr_filt)
 
-def mdtf_log_config(config_path, root_logger, cli_d=None):
+def _set_log_file_paths(d, new_paths):
+    """Assign paths to log files. Paths are assumed to be well-formed and in 
+    writeable locations.
+
+    Args:
+        d (dict): Nested dict read from the log configuration file.
+        new_paths (dict): Dict of new log file names to assign. Keys are the 
+            names of :py:class:`logging.Handler`s in the config file, and values
+            are the new paths.
+    """
+    if not new_paths:
+        _log.error("Log file paths not set.")
+        return
+    handlers = d.setdefault('handlers', dict())
+    for h in handlers:
+        if h in new_paths:
+            d['handlers'][h]["filename"] = new_paths[h]
+            del new_paths[h]
+    if new_paths:
+        _log.warning("Couldn't find handlers for the following log files: %s",
+            new_paths)
+
+def mdtf_log_config(config_path, root_logger, cli_d=None, new_paths=None):
     """Wrapper to handle logger configuration from a file and transfer of the 
     temporary log cache to the newly-configured loggers.
 
@@ -340,7 +362,10 @@ def mdtf_log_config(config_path, root_logger, cli_d=None):
             `schema <https://docs.python.org/3.7/library/logging.config.html#logging-config-dictschema>`__.
         root_logger (:py:class:`logging.Logger`): Framework's root logger, to
             which the temporary log cache was attached.
-        cli_d (dict): Dict of parsed CLI settings.
+        cli_d (dict): Dict of parsed CLI settings, in particular 'verbose'/'quiet'.
+        new_paths (dict): Dict of new log file names to assign. Keys are the 
+            names of :py:class:`logging.Handler`s in the config file, and values
+            are the new paths.
     """
     # temporary cache handler should be the only handler attached to root_logger
     # as of now
@@ -368,6 +393,7 @@ def mdtf_log_config(config_path, root_logger, cli_d=None):
     try:
         log_config = read_json(config_path)
         _set_console_log_level(log_config, stdout_level, stderr_level)
+        _set_log_file_paths(log_config, new_paths)
         logging.config.dictConfig(log_config)
     except Exception as exc:
         _log.exception("Logging config failed.")
