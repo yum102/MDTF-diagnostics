@@ -272,6 +272,24 @@ def git_info():
         git_hash = "<couldn't get git hash>"
     return (git_branch, git_hash, git_dirty)
 
+def _set_excepthook(root_logger):
+    """Ensure all uncaught exceptions, other than user KeyboardInterrupt, are 
+    logged to the root logger.
+
+    See `https://docs.python.org/3/library/sys.html#sys.excepthook`__.
+    """
+    def _handle_uncaught_exception(exc_type, exc_value, exc_traceback):
+        if issubclass(exc_type, KeyboardInterrupt):
+            # Skip logging for user interrupt
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+        root_logger.critical(
+            (80*'*') + "\nUncaught exception:", # banner so it stands out 
+            exc_info=(exc_type, exc_value, exc_traceback)
+        )
+    
+    sys.excepthook = _handle_uncaught_exception
+
 def _set_console_log_level(d, stdout_level, stderr_level, filter_=True):
     """Configure log levels for handlers writing to stdout and stderr.
 
@@ -373,6 +391,9 @@ def mdtf_log_config(config_path, root_logger, cli_d=None, new_paths=None):
         or not isinstance(root_logger.handlers[0], MultiFlushMemoryHandler):
         _log.error("Unexpected handlers attached to root: %s", root_logger.handlers)
     temp_log_cache = root_logger.handlers[0]
+
+    # log uncaught exceptions
+    _set_excepthook(root_logger)
 
     # set verbosity level
     if not cli_d or not (cli_d.get('verbose',0) or cli_d.get('quiet',0)):
