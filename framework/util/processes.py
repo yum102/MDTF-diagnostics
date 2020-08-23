@@ -207,17 +207,3 @@ def run_shell_command(command, env=None, cwd=None, dry_run=False):
         return stdout.split('\0')
     else:
         return stdout.splitlines()
-
-def signal_logger(caller_name, signum=None, frame=None):
-    """Lookup signal name from number; `<https://stackoverflow.com/a/2549950>`__.
-    """
-    if signum:
-        sig_lookup = {
-            k:v for v, k in reversed(sorted(list(signal.__dict__.items()))) \
-                if v.startswith('SIG') and not v.startswith('SIG_')
-        }
-        _log.info(
-            "%s caught signal %s (%s)",
-            caller_name, sig_lookup.get(signum, 'UNKNOWN'), signum
-        )
-        _log.debug("%s frame: %s", caller_name, frame)

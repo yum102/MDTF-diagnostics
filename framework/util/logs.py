@@ -4,6 +4,7 @@ import os
 import sys
 import datetime
 import subprocess
+import signal
 import logging
 import logging.config
 import logging.handlers
@@ -271,6 +272,29 @@ def git_info():
     if not git_hash:
         git_hash = "<couldn't get git hash>"
     return (git_branch, git_hash, git_dirty)
+
+# ------------------------------------------------------------------------------
+
+def signal_logger(log, caller_name, signum=None, frame=None):
+    """Lookup signal name from number and write to log.
+    
+    Taken from `<https://stackoverflow.com/a/2549950>`__.
+
+    Args:
+        log (:py:class:`logging.Logger`): Log to write information to.
+        caller_name (str): Calling function name, only used in log message.
+        signum, frame: parameters of the signal we recieved.
+    """
+    if signum:
+        sig_lookup = {
+            k:v for v, k in reversed(sorted(list(signal.__dict__.items()))) \
+                if v.startswith('SIG') and not v.startswith('SIG_')
+        }
+        log.info(
+            "%s caught signal %s (%s)",
+            caller_name, sig_lookup.get(signum, 'UNKNOWN'), signum
+        )
+        log.debug("%s frame: %s", caller_name, frame)
 
 def _set_excepthook(root_logger):
     """Ensure all uncaught exceptions, other than user KeyboardInterrupt, are 
