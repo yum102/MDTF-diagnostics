@@ -290,6 +290,36 @@ def _set_excepthook(root_logger):
     
     sys.excepthook = _handle_uncaught_exception
 
+def _level_from_cli(cli_d = None):
+    """Convert CLI flags (``--verbose``/``--quiet``) into log levels for 
+    :func:`_set_console_log_level`.
+
+    Args: 
+        cli_d (dict): Dict of parsed CLI settings, in particular 'verbose'/'quiet'.
+
+    Returns: 
+        Tuple of log levels for stdout loggers and stderr loggers, respectively.
+    """
+    # default case: INFO to stdout, WARNING and ERROR to stderr
+    default_ = (logging.INFO, logging.WARNING)
+
+    if not cli_d:
+        _log.error("CLI dict not set, using default verbosity.")
+        return default_
+    elif not (cli_d.get('verbose',0) or cli_d.get('quiet',0)):
+        return default_
+    elif cli_d.get('verbose',0) >= 1:
+        return (logging.DEBUG, logging.WARNING)
+    elif cli_d.get('quiet',0) >= 1:
+        return (None, logging.WARNING)
+    elif cli_d.get('quiet',0) >= 2:
+        return (None, logging.ERROR)
+    elif cli_d.get('quiet',0) >= 3:
+        return (None, None)
+    else:
+        _log.warning("Couldn't parse log verbosity, using defaults.")
+        return default_
+
 def _set_console_log_level(d, stdout_level, stderr_level, filter_=True):
     """Configure log levels for handlers writing to stdout and stderr.
 
@@ -395,20 +425,8 @@ def mdtf_log_config(config_path, root_logger, cli_d=None, new_paths=None):
     # log uncaught exceptions
     _set_excepthook(root_logger)
 
-    # set verbosity level
-    if not cli_d or not (cli_d.get('verbose',0) or cli_d.get('quiet',0)):
-        # default case: INFO to stdout, WARNING and ERROR to stderr
-        stdout_level, stderr_level = (logging.INFO, logging.WARNING)
-    elif cli_d.get('verbose',0) >= 1:
-        stdout_level, stderr_level = (logging.DEBUG, logging.WARNING)
-    elif cli_d.get('quiet',0) >= 1:
-        stdout_level, stderr_level = (None, logging.WARNING)
-    elif cli_d.get('quiet',0) >= 2:
-        stdout_level, stderr_level = (None, logging.ERROR)
-    elif cli_d.get('quiet',0) >= 3:
-        stdout_level, stderr_level = (None, None)
-    else:
-        stdout_level, stderr_level = (logging.INFO, logging.WARNING)
+    # set console verbosity level
+    stdout_level, stderr_level = _level_from_cli(cli_d)
 
     # read the config file, munge it according to CLI settings, configure loggers
     try:
