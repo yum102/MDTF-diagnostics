@@ -38,7 +38,7 @@ class MDTFFramework(object):
 
     def cleanup_tempdirs(self, signum=None, frame=None):
         # delete temp files
-        util.signal_logger(self.__class__.__name__, signum, frame)
+        util.signal_logger(_log, self.__class__.__name__, signum, frame)
         config = configs.ConfigManager()
         tmpdirs = configs.TempDirManager()
         if not config.config.get('keep_temp', False):

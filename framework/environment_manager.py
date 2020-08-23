@@ -157,7 +157,7 @@ class EnvironmentManager(object, metaclass=ABCMeta):
             self.destroy_environment(env)
 
     def subprocess_cleanup(self, signum=None, frame=None):
-        util.signal_logger(self.__class__.__name__, signum, frame)
+        util.signal_logger(_log, self.__class__.__name__, signum, frame)
         # kill any active subprocesses
         for pod in self.pods:
             if pod.process_obj is not None:
