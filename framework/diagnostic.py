@@ -114,9 +114,6 @@ class Diagnostic(object):
         """
         default_file_required = True 
         for i, var in enumerate(varlist):
-            assert var['freq'] in ['1hr', '3hr', '6hr', 'day', 'mon'], \
-                "WARNING: didn't find "+var['freq']+" in frequency options "+\
-                    " (set in "+__file__+": parse_pod_varlist)"
             if 'requirement' in var:
                 varlist[i]['required'] = (var['requirement'].lower() == 'required')
             elif 'required' not in varlist[i]:
@@ -195,6 +192,7 @@ class Diagnostic(object):
 
         # Set env vars for variable and axis names:
         axes = dict()
+        ax_bnds = dict()
         ax_status = dict()
         for var in self.iter_vars_and_alts():
             # make sure axes found for different vars are consistent
@@ -225,7 +223,12 @@ class Diagnostic(object):
                             "({}!={})").format(
                                 envvar_name, axes[envvar_name], ax_name
                     ))
-        for key, val in iter(axes.items()): 
+        for key, val in axes.items():
+            # Define ax bounds variables; TODO do this more honestly
+            ax_bnds[key+'_bnds'] = val + '_bnds'
+        for key, val in axes.items(): 
+            util.setenv(key, val, self.pod_env_vars)
+        for key, val in ax_bnds.items(): 
             util.setenv(key, val, self.pod_env_vars)
 
     def _setup_pod_directories(self):
