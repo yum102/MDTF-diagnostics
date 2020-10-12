@@ -10,13 +10,10 @@
 // All text to the right of an unquoted "//" is a comment and ignored, as well
 // as blank lines (JSONC quasi-standard.)
 {
-  "description" : "Driver script for the NOAA Model Diagnostics Task Force (MDTF) package, which runs process-oriented diagnostics (PODs) on climate model data. See documentation at https://github.com/NOAA-GFDL/MDTF-diagnostics.\n\nThe first form runs diagnostics on data at CASE_ROOT_DIR, using configuration set on the command line or in INPUT_FILE.\nThe second form ('mdtf info') prints information about available diagnostics.",
+  "usage": "mdtf run [options]",
+  "description" : "Script to run diagnostics in the NOAA Model Diagnostics Task Force (MDTF) package. See documentation at https://mdtf-diagnostics.rtfd.io.\n\nThe first form runs diagnostics on data at CASE_ROOT_DIR, using configuration set on the command line or in INPUT_FILE.\nThe second form ('mdtf info') prints information about available diagnostics.",
   "arguments": [ // Top-level args not in any group
     {
-      "name": "version", 
-      "action": "version", 
-      "version": "%(prog)s 3.0 beta 2"
-    },{
       "name": "input_file",
       "help": "Path to a user configuration file that sets options listed here. This can be a JSON file of the form given in sample_input.jsonc, or a text file containing command-line arguments. Options set explicitly on the command line will still override settings in this file.",
       "is_positional": true,

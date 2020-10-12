@@ -1,0 +1,42 @@
+// Configuration for command-line arguments for the 'mdtf install' subcommand, 
+// which calls framework/install/install.py. Syntax is based on argparse, see
+// https://docs.python.org/3.7/library/argparse.html and framework/cli.py.
+//
+// All text to the right of an unquoted "//" is a comment and ignored, as well
+// as blank lines (JSONC quasi-standard.)
+{
+  "usage": "mdtf install [options]",
+  "description" : "Installation script for the NOAA Model Diagnostics Task Force (MDTF) package. See documentation at https://mdtf-diagnostics.rtfd.io.\n\nThis script configures paths and other settings specific to your installation, which are stored in /sites/local. Optionally, it can download supporting data for individual PODs over anonymous FTP.",
+  "arguments": [
+    {
+      "name": "env_setup",
+      "help": "Method to use for runtime dependency management. 'conda-basic' or 'conda-full' will install environments using the conda package manager.",
+      "nargs": 1,
+      "choices": ["conda-basic", "conda-full", "no-conda"]
+    },{
+      "name": "no_conda_install",
+      "help": "Set this flag to skip creation of conda environments.",
+      "default" : false
+    },{
+      "name": "conda_install_dev",
+      "help": "Install conda environment for diagnostic development. Not needed to run the framework.",
+      "default" : false
+    },{
+      "name": "no_downloads",
+      "help": "Set this flag to skip downloading observational and sample model data over anonymous FTP.",
+      "default" : false
+    },{
+      "name": "no_cesm",
+      "help": "Set this flag to skip downloading CESM sample model data.",
+      "default" : false
+    },{
+      "name": "no_am4",
+      "help": "Set this flag to skip downloading AM4 sample model data.",
+      "default" : false
+    },{
+      "name": "no_test_run",
+      "help": "Set this flag to skip doing a test run of the framework to verify the installation was successful.",
+      "default" : false
+    }
+  ]
+}
