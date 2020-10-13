@@ -30,7 +30,7 @@
     "verify": {
       "help": "Check the output of the framework for errors in the output.",
       "module": "framework.verify_links",
-      "entry_point": "",
+      "entry_point": "main",
       "cli_file": "verify"
     }
   }

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Check output of the files returned by a run of the MDTF framework and determine
 if any PODs failed to generate files, as determined by non-functional html links
@@ -6,14 +5,6 @@ in the output webpages.
 
 Based on test_website by Dani Coleman, bundy@ucar.edu
 """
-import sys
-# do version check before importing other stuff
-if sys.version_info[0] < 3 or sys.version_info[1] < 7:
-    print(("ERROR: MDTF currently only supports python >= 3.7. Please check "
-    "which version is on your $PATH (e.g. with `which python`.)"))
-    print("Attempted to run with following python version:\n{}".format(sys.version))
-    exit(1)
-# passed; continue with imports
 import os
 import argparse
 import collections
@@ -260,16 +251,18 @@ class LinkVerifier(object):
 
 # --------------------------------------------------------------
 
-if __name__ == '__main__':
-    # Wrap input/output if we're called as a standalone script
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-v", "--verbose", action="store_true",
-        help="increase output verbosity")
-    parser.add_argument("path_or_url", 
-        help="URL or filesystem path to the MDTF framework output directory.")
-    args = parser.parse_args()
-    
-    link_verifier = LinkVerifier(args.path_or_url, args.verbose)
+def main(code_root, cli_parser):
+    """Entry point for script when called as a subcommand from mdtf.py.
+
+    Args:
+        code_root: MDTF-diagnostics repo directory (not used, but passed by
+            mdtf.py)
+        cli_parser: :class:`framework.cli.MDTFArgParser` instance containing
+            parsed command-line arguments.
+    """
+    link_verifier = LinkVerifier(
+        cli_parser.parsed_args.path_or_url, cli_parser.parsed_args.verbose
+    )
     missing_dict = link_verifier.verify_all_links()
 
     if missing_dict:
