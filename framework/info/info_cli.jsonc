@@ -1,0 +1,20 @@
+// Configuration for command-line arguments for the 'mdtf info' subcommand, 
+// which calls framework/info/info.py. Syntax is based on argparse, see
+// https://docs.python.org/3.7/library/argparse.html and framework/cli.py.
+//
+// All text to the right of an unquoted "//" is a comment and ignored, as well
+// as blank lines (JSONC quasi-standard.)
+{
+  "usage": "mdtf info <topic>",
+  "description" : "Info script for the NOAA Model Diagnostics Task Force (MDTF) package. See documentation at https://mdtf-diagnostics.rtfd.io.\n\nThis script prints data about installed diagnostics (PODs).",
+  "arguments": [
+    {
+      "name": "topic",
+      "help": "Topic to display information on. 'mdtf info topics' gives a list of all recognized topics.",
+      "is_positional": true,
+      "nargs": "*",
+      "default": "topics",
+      "metavar" : "<topic>"
+    }
+  ]
+}

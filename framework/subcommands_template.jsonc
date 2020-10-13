@@ -21,12 +21,12 @@
       "entry_point": "",
       "cli_file": "cli"
     },
-    // "info": {
-    //   "help": "Get info on installed PODs.",
-    //   "module": "framework.info.info",
-    //   "entry_point": "",
-    //   "cli_file": "",
-    // },
+    "info": {
+      "help": "Get info on installed PODs.",
+      "module": "framework.info.info",
+      "entry_point": "main",
+      "cli_file": "info"
+    },
     "verify": {
       "help": "Check the output of the framework for errors in the output.",
       "module": "framework.verify_links",
