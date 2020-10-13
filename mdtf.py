@@ -109,7 +109,7 @@ class MDTFSubcommandDispatch(object):
         self.p = cli.MDTFArgParser(
             prog="mdtf",
             usage="%(prog)s [flags] <command> [command-specific options]",
-            description=cli.dedent("""
+            description=cli.word_wrap("""
                 Driver script for the NOAA Model Diagnostics Task Force (MDTF)
                 package, which runs process-oriented diagnostics (PODs) on
                 climate model data. See documentation at
@@ -124,19 +124,19 @@ class MDTFSubcommandDispatch(object):
             metavar="<site>",
             default=self.default_site,
             choices=self.sites,
-            help=cli.dedent("""
+            help=cli.word_wrap("""
                 Site-specific functionality to use. 
             """)
         )
         self.p._optionals.title = 'GENERAL OPTIONS'
         if not self.installed:
-            self.p.epilog=cli.dedent("""
+            self.p.epilog=cli.word_wrap("""
                 Warning: User-customized configuration files not found. Consider
                 running 'mdtf install' to configure your installation.
             """)
         sub_ps = self.p.add_subparsers(
             title='COMMANDS', 
-            description=cli.dedent("""
+            description=cli.word_wrap("""
                 Subcommand functionality. Use '%(prog)s <command> --help' to get
                 help on options specific to each command.
             """),
