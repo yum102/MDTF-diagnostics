@@ -3,14 +3,15 @@ Specifically, util.py implements general functionality that's not MDTF-specific.
 """
 import os
 import io
-import re
-import logging
-import string
-import glob
-import shutil
 import collections
+import glob
 import json
+import logging
+import re
+import string
+import shutil
 from . import funcs
+from . import exceptions as exc
 
 _log = logging.getLogger(__name__)
 
@@ -38,8 +39,8 @@ def strip_comments(str_, delimiter=None):
     return '\n'.join([ss for ss in s if (ss and not ss.isspace())])
 
 def read_json(file_path):
-    assert os.path.exists(file_path), \
-        "Couldn't find JSON file {}.".format(file_path)
+    if not os.path.exists(file_path):
+        raise exc.MDTFFileNotFoundError(file_path)
     try:    
         with io.open(file_path, 'r', encoding='utf-8') as file_:
             str_ = file_.read()
@@ -147,7 +148,7 @@ def recursive_copy(src_files, src_root, dest_root, copy_function=None,
     ]
     for f in dest_files:
         if not overwrite and os.path.exists(f):
-            raise OSError('{} exists.'.format(f))
+            raise exc.MDTFFileExistsError(f)
         os.makedirs(os.path.normpath(os.path.dirname(f)), exist_ok=True)
     for mdtf, dest in zip(src_files, dest_files):
         copy_function(mdtf, dest)
@@ -251,7 +252,7 @@ def check_required_dirs(already_exist =[], create_if_nec = []):
         if not os.path.exists(dir_):
             if not dir_in in create_if_nec:
                 _log.error("%s=%s directory does not exist", dir_in, dir_)
-                raise OSError("Directory {} does not exist".format(dir_))
+                raise exc.MDTFFileNotFoundError(dir_)
             else:
                 _log.info("Creating %s", dir_)
                 os.makedirs(dir_)
@@ -372,7 +373,8 @@ def append_html_template(template_file, target_file, template_dict={},
             append the substituted contents of template_file to it. If false,
             overwrite target_file with the substituted contents of template_file.
     """
-    assert os.path.exists(template_file)
+    if not os.path.exists(template_file):
+        raise exc.MDTFFileNotFoundError(template_file)
     with io.open(template_file, 'r', encoding='utf-8') as f:
         html_str = f.read()
         html_str = _DoubleBraceTemplate(html_str).safe_substitute(template_dict)
@@ -381,7 +383,7 @@ def append_html_template(template_file, target_file, template_dict={},
             _log.debug("Write %s to new %s", template_file, target_file)
             mode = 'w'
         else:
-            raise OSError("Can't find {}".format(target_file))
+            raise exc.MDTFFileNotFoundError(target_file)
     else:
         if append:
             _log.debug("Append %s to %s", template_file, target_file)
