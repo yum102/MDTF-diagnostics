@@ -1,0 +1,52 @@
+[
+  {
+    "dest": "environment_manager",
+    "choices": [
+      {
+        "name": "Conda",
+        "help": "Manages dependencies with Conda.",
+        "module": "framework.install.install",
+        "entry_point": "",
+        "cli": {
+          "arguments": [
+            {
+              "name": "conda_root",
+              "help": "Path to the conda installation. Only used if environment_manager = 'Conda'. Set equal to '' to use conda from your system's $PATH.",
+              "default" : "",
+              "metavar" : "<DIR>",
+              "action": "PathAction"
+            },{
+              "name": "conda_env_root",
+              "help": "Root directory for conda environment installs. Only used if environment_manager = 'Conda'. Set equal to '' to install in your system's default location.",
+              "default" : "",
+              "metavar" : "<DIR>",
+              "action": "PathAction"
+            }
+          ]
+        }
+      },{
+        "name": "Virtualenv",
+        "help": "foo",
+        "module": "framework.install.install",
+        "entry_point": "",
+        "cli": {
+          "arguments" : [
+            {
+              "name": "venv_root",
+              "help": "Root directory for python virtual environments. Set equal to '' to install in your system's default location.",
+              "default" : "./envs/venv",
+              "metavar" : "<DIR>",
+              "action": "PathAction"
+            },{
+              "name": "r_lib_root",
+              "help": "Root directory for R packages requested by PODs. Set equal to '' to install in your system library.",
+              "default" : "./envs/r_libs",
+              "metavar" : "<DIR>",
+              "action": "PathAction"
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

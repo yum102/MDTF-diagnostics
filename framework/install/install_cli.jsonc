@@ -22,18 +22,6 @@
       "help": "Install conda environment for diagnostic development. Not needed to run the framework.",
       "default" : false
     },{
-      "name": "no_downloads",
-      "help": "Set this flag to skip downloading observational and sample model data over anonymous FTP.",
-      "default" : false
-    },{
-      "name": "no_cesm",
-      "help": "Set this flag to skip downloading CESM sample model data.",
-      "default" : false
-    },{
-      "name": "no_am4",
-      "help": "Set this flag to skip downloading AM4 sample model data.",
-      "default" : false
-    },{
       "name": "no_test_run",
       "help": "Set this flag to skip doing a test run of the framework to verify the installation was successful.",
       "default" : false

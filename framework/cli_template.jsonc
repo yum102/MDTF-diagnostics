@@ -10,61 +10,55 @@
 // All text to the right of an unquoted "//" is a comment and ignored, as well
 // as blank lines (JSONC quasi-standard.)
 {
-  "usage": "mdtf run [options]",
-  "description" : "Script to run diagnostics in the NOAA Model Diagnostics Task Force (MDTF) package. See documentation at https://mdtf-diagnostics.rtfd.io.\n\nThe first form runs diagnostics on data at CASE_ROOT_DIR, using configuration set on the command line or in INPUT_FILE.\nThe second form ('mdtf info') prints information about available diagnostics.",
+  "usage": "mdtf run [options] [CASE_ROOT_DIR]",
+  "description" : "Runs diagnostics in the NOAA Model Diagnostics Task Force (MDTF) package. See documentation at https://mdtf-diagnostics.rtfd.io.\n\nThe scripts runs specified diagnostics on data at CASE_ROOT_DIR, using configuration set on the command line and/or through a file passed via --input_file.",
   "arguments": [ // Top-level args not in any group
     {
-      "name": "input_file",
-      "help": "Path to a user configuration file that sets options listed here. This can be a JSON file of the form given in sample_input.jsonc, or a text file containing command-line arguments. Options set explicitly on the command line will still override settings in this file.",
-      "is_positional": true,
-      "nargs" : "?", // 0 or 1 occurrences: might have set this with --input_file
-      "metavar" : "INPUT_FILE"
-    },{
-      "name": "root_dir",
+      "name": "CASE_ROOT_DIR",
       "help": "Root directory of model data to analyze.",
       "is_positional": true,
       "nargs" : "?", // 0 or 1 occurrences: might have set this with --CASE_ROOT_DIR
+      "type" : "str",
       "metavar" : "CASE_ROOT_DIR"
     },{
       "name": "input_file",
       "short_name": "f",
-      "help": "Alternate way to specify user configuration file (with a flag instead of a positional argument.)",
+      "help": "Path to a user configuration file that sets options listed here. This can be a JSON file of the form given in sample_input.jsonc, or a text file containing command-line arguments. Options set explicitly on the command line will still override settings in this file.",
       "type" : "str",
-      "metavar" : "INPUT_FILE",
-      "dest": "flag_input_file"
+      "metavar" : "INPUT_FILE"
     }
   ],
   "argument_groups" : [
     {
-      "name" : "PATHS",
+      "title" : "PATHS",
       "description" : "Location of input and output data. If a relative path is given, it's resolved relative to the MDTF-diagnostics code directory.",
       "arguments" : [
         {
           "name": "MODEL_DATA_ROOT",
           "help": "Parent directory containing results from different models.",
           "metavar" : "<DIR>",
-          "parse_type": "path"
+          "action": "PathAction"
         },{
           "name": "OBS_DATA_ROOT",
           "help": "Parent directory containing observational data used by individual PODs.",
           "metavar" : "<DIR>",
-          "parse_type": "path"
+          "action": "PathAction"
         },{
           "name": "OUTPUT_DIR",
           "short_name" : "o",
           "help": "Directory to write output files.",
           "metavar" : "<DIR>",
-          "parse_type": "path"
+          "action": "PathAction"
         },{
           "name": "WORKING_DIR",
           "short_name" : "w",
           "help": "Working directory. Defaults to output directory if unspecified.",
           "metavar" : "<DIR>",
-          "parse_type": "path"
+          "action": "PathAction"
         }
       ]
     },{
-      "name" : "MODEL",
+      "title" : "MODEL",
       "description" : "Settings describing the input model data.",
       "arguments" : [
         {
@@ -127,7 +121,7 @@
         }
       ]
     },{
-      "name" : "DATA",
+      "title" : "DATA",
       "description" : "Settings affecting the framework's retrieval of model data.",
       "arguments" : [
         {
@@ -147,7 +141,7 @@
         }
       ]
     },{
-      "name" : "DIAGNOSTICS",
+      "title" : "DIAGNOSTICS",
       "arguments" : [
         {
           "name": "pods",
@@ -161,41 +155,18 @@
         }
       ]
     },{
-      "name" : "RUNTIME",
+      "title" : "RUNTIME",
       "description" : "Settings affecting the runtime environment of the PODs.",
       "arguments" : [
         {
           "name": "environment_manager",
           "help": "Method to manage POD runtime dependencies.",
-          "default" : "Conda"
-        },{
-          "name": "conda_root",
-          "help": "Path to the conda installation. Only used if environment_manager = 'Conda'. Set equal to '' to use conda from your system's $PATH.",
-          "default" : "",
-          "metavar" : "<DIR>",
-          "parse_type": "path"
-        },{
-          "name": "conda_env_root",
-          "help": "Root directory for conda environment installs. Only used if environment_manager = 'Conda'. Set equal to '' to install in your system's default location.",
-          "default" : "",
-          "metavar" : "<DIR>",
-          "parse_type": "path"
-        },{
-          "name": "venv_root",
-          "help": "Root directory for python virtual environments. Only used if environment_manager = 'Virtualenv'. Set equal to '' to install in your system's default location.",
-          "default" : "./envs/venv",
-          "metavar" : "<DIR>",
-          "parse_type": "path"
-        },{
-          "name": "r_lib_root",
-          "help": "Root directory for R packages requested by PODs. Only used if environment_manager = 'Virtualenv'. Set equal to '' to install in your system library.",
-          "default" : "./envs/r_libs",
-          "metavar" : "<DIR>",
-          "parse_type": "path"
+          "default" : "Conda",
+          "action": "PluginArgAction"
         }
       ]
     },{
-      "name" : "OUTPUT",
+      "title" : "OUTPUT",
       "description" : "Settings affecting what output is generated.",
       "arguments" : [
         {
@@ -226,7 +197,7 @@
         }
       ]
     },{
-      "name" : "DEBUG",
+      "title" : "DEBUG",
       "description" : "Settings used in debugging.",
       "arguments" : [
         {
