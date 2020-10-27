@@ -2,7 +2,8 @@
 from .exceptions import *
 from .funcs import (
     Singleton, MultiMap, NameSpace,
-    is_iterable, to_iter, from_iter, filter_kwargs
+    is_iterable, to_iter, from_iter, filter_kwargs, splice_into_list,
+    deserialize_class
 )
 from .file_io import (
     strip_comments, read_json, parse_json, write_json, pretty_print_json,
