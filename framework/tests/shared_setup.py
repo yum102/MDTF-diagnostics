@@ -34,17 +34,17 @@ def tearDown_ConfigManager():
     try:
         temp = configs.ConfigManager(unittest=True)
         temp._reset()
-    except:
+    except Exception:
         pass
     try:
         temp = configs.VariableTranslator(unittest=True)
         temp._reset()
-    except:
+    except Exception:
         pass
     try:
         temp = configs.TempDirManager()
         temp._reset()
-    except:
+    except Exception:
         pass
 
 

@@ -159,7 +159,7 @@ class TestCLIConfigManager(unittest.TestCase):
         try:
             c = cli.CLIConfigManager()
             c._reset()
-        except:
+        except Exception:
             pass
 
     def test_no_partial_def(self):
