@@ -222,7 +222,7 @@ class MDTFFramework(object):
             for mod in self._dispatch_search:
                 try:
                     return getattr(mod, class_prefix+class_suffix)
-                except:
+                except Exception:
                     continue
             _log.error("No class named %s.", class_prefix+class_suffix)
             raise Exception('no_class')

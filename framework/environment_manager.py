@@ -1,8 +1,6 @@
 import os
 import io
-import glob
 import logging
-import shutil
 import atexit
 import signal
 from abc import ABCMeta, abstractmethod

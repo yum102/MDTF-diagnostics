@@ -1,5 +1,4 @@
 import os
-import glob
 import copy
 import logging
 import shutil
@@ -128,7 +127,8 @@ class DataManager(object, metaclass=ABCMeta):
 
         # dynamic inheritance to add netcdf manipulation functions
         # source: https://stackoverflow.com/a/8545134
-        mixin = config.config.get(netcdf_helper, 'NcoNetcdfHelper')
+        # mixin = config.config.get(netcdf_helper, 'NcoNetcdfHelper')
+        # hardwire now, since NCO is all that's implemented
         mixin = getattr(netcdf_helper, 'NcoNetcdfHelper')
         self.__class__ = type(self.__class__.__name__, (self.__class__, mixin), {})
         try:
@@ -386,7 +386,7 @@ class DataManager(object, metaclass=ABCMeta):
         if unique_files:
             if self._fetch_order_function is not None:
                 sort_key = self._fetch_order_function
-            if hasattr(unique_files[0], '_remote_data'):
+            elif hasattr(unique_files[0], '_remote_data'):
                 sort_key = attrgetter('_remote_data')
             else:
                 sort_key = None

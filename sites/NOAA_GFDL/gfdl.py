@@ -5,7 +5,6 @@ import logging
 import shutil
 import subprocess
 from collections import defaultdict, namedtuple
-from itertools import chain
 from operator import attrgetter, itemgetter
 from abc import ABCMeta, abstractmethod, abstractproperty
 from framework import cmip6, configs, datelabel

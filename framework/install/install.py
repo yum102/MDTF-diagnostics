@@ -9,11 +9,9 @@ if sys.version_info[0] < 3 or sys.version_info[1] < 7:
 # passed; continue with imports
 import os
 import io
-import re
 import glob
 import collections
 import platform
-import stat
 import ftplib
 import socket
 import shutil
@@ -31,7 +29,7 @@ def shell_command_wrapper(cmd, **kwargs):
     print('  ', cmd)
     try:
         stdout = util.run_shell_command(cmd, **kwargs)
-    except:
+    except Exception:
         raise
     if stdout:
         print('SHELL STDOUT:')
@@ -56,7 +54,7 @@ def find_conda(code_root, conda_config):
         conda_info = shell_command_wrapper(
             conda_config['init_script'] + ' -v'
         )
-    except:
+    except Exception:
         print("ERROR: attempt to find conda installation failed.")
         return dict()
     for line in conda_info:
@@ -114,7 +112,8 @@ def ftp_download(ftp_config, ftp_data, install_config):
     except Exception as exc:  
         # do whatever we can to cleanup gracefully before exiting
         try: ftp.quit()
-        except: pass
+        except Exception: 
+            pass
         fatal_exception_handler(exc,
             "ERROR: could not establish FTP connection to {}.".format(ftp_config['host'])
         )
@@ -133,9 +132,11 @@ def ftp_download(ftp_config, ftp_data, install_config):
         except Exception as exc:
             # do whatever we can to cleanup gracefully before exiting
             try: f_out.close()
-            except: pass
+            except Exception:
+                pass
             try: ftp.quit()
-            except: pass
+            except Exception:
+                pass
             fatal_exception_handler(exc,
                 "ERROR: could not download {} from {}.".format(f.file, ftp_config['host'])
             )
@@ -143,7 +144,8 @@ def ftp_download(ftp_config, ftp_data, install_config):
         # ftp may have closed if we hit an error
         ftp.voidcmd('NOOP')
         ftp.quit()
-    except: pass
+    except Exception: 
+        pass
     print("Closed connection to {}.".format(ftp_config['host']))
 
 def untar_data(ftp_data, install_config):
